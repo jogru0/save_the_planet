@@ -1,0 +1,10 @@
+[package]
+name = "save-the-planet"
+version = "0.1.0"
+authors = ["Jonathan <jogru0@gmail.com>"]
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+crossterm = "0.27"
+ratatui = "0.22.0"
