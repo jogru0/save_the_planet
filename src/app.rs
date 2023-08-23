@@ -1,5 +1,6 @@
 use std::error;
 
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::ListState;
 
 use self::cards::Cards;
@@ -60,9 +61,11 @@ pub struct App {
     /// counter
     pub counter: u128,
     pub buyers: u128,
-    pub index: usize,
 
     pub cards: Cards,
+
+    pub old_key: Option<KeyCode>,
+    pub key: Option<KeyCode>,
 }
 
 impl Default for App {
@@ -71,13 +74,23 @@ impl Default for App {
             running: true,
             counter: 0,
             buyers: 0,
-            index: 0,
             cards: Cards::new(),
+            key: None,
+            old_key: None,
         }
     }
 }
 
 impl App {
+    pub fn check_key(&mut self, key: KeyCode) -> bool {
+        if self.key == Some(key) {
+            self.key = None;
+            true
+        } else {
+            false
+        }
+    }
+
     /// Constructs a new instance of [`App`].
     pub fn new() -> Self {
         Self::default()
@@ -107,6 +120,31 @@ impl App {
     pub fn decrement_counter(&mut self) {
         if let Some(res) = self.counter.checked_sub(1) {
             self.counter = res;
+        }
+    }
+
+    /// Handles the key events and updates the state of [`App`].
+    pub fn handle_key_events(&mut self, key_event: KeyEvent) -> AppResult<()> {
+        match key_event.code {
+            // Exit application on `ESC` or `q`
+            KeyCode::Esc | KeyCode::Char('q') => {
+                self.quit();
+            }
+
+            code => {
+                self.key = Some(code);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn simulate(&mut self, seconds: u64) {
+        self.cards.flyer.saved_co2 += seconds as u128;
+
+        self.counter += self.buyers * seconds as u128;
+
+        if self.buyers >= 1000 {
+            self.running = false;
         }
     }
 }

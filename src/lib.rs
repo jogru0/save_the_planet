@@ -10,5 +10,5 @@ pub mod ui;
 /// Terminal user interface.
 pub mod tui;
 
-/// Event handler.
-pub mod handler;
+// /// Event handler.
+// pub mod handler;

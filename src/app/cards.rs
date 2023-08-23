@@ -1,9 +1,47 @@
+use ratatui::style::Color;
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Card {
+    Flyer,
+    Achievements,
+}
+
+impl Card {
+    pub fn color(&self) -> Color {
+        match self {
+            Card::Flyer => Color::Cyan,
+            Card::Achievements => Color::Yellow,
+        }
+    }
+
+    pub fn text(&self) -> String {
+        match self {
+            Card::Flyer => "Flyer".to_owned(),
+            Card::Achievements => "Achievements".to_owned(),
+        }
+    }
+
+    pub fn next(&self) -> Option<Self> {
+        match self {
+            Card::Flyer => Some(Card::Achievements),
+            Card::Achievements => None,
+        }
+    }
+
+    pub fn previous(&self) -> Option<Self> {
+        match self {
+            Card::Flyer => None,
+            Card::Achievements => Some(Card::Flyer),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Cards {
     pub flyer: Flyer,
     pub achievements: Option<Achievements>,
 
-    pub selected: String,
+    pub selected: Card,
 }
 
 impl Cards {
@@ -11,18 +49,51 @@ impl Cards {
         Self {
             flyer: Flyer::new(),
             achievements: None,
-            selected: "Flyer".to_string(),
+            selected: Card::Flyer,
         }
     }
 
     pub(crate) fn next(&mut self) {
-        if self.selected == "Flyer" && self.achievements.is_some() {
-            self.selected = "Achievements".to_owned();
+        let mut new = self.selected;
+
+        loop {
+            match new.next() {
+                None => return,
+                Some(next) => {
+                    if self.contains(next) {
+                        self.selected = next;
+                        return;
+                    } else {
+                        new = next
+                    }
+                }
+            }
         }
     }
 
     pub(crate) fn previous(&mut self) {
-        self.selected = String::from("Flyer")
+        let mut new = self.selected;
+
+        loop {
+            match new.previous() {
+                None => return,
+                Some(previous) => {
+                    if self.contains(previous) {
+                        self.selected = previous;
+                        return;
+                    } else {
+                        new = previous
+                    }
+                }
+            }
+        }
+    }
+
+    fn contains(&self, card: Card) -> bool {
+        match card {
+            Card::Flyer => true,
+            Card::Achievements => self.achievements.is_some(),
+        }
     }
 }
 
@@ -34,19 +105,22 @@ impl Default for Cards {
 
 #[derive(Debug)]
 pub struct Flyer {
-    count: u128,
-    buyer: u128,
+    pub saved_co2: u128,
+    pub available_flyers: Option<u128>,
 }
 
 impl Flyer {
     fn new() -> Self {
-        Self { count: 0, buyer: 0 }
+        Self {
+            saved_co2: 0,
+            available_flyers: None,
+        }
     }
 }
 
 #[derive(Debug)]
 pub struct Achievements {
-    unlocked: Vec<Achievement>,
+    pub unlocked: Vec<Achievement>,
 }
 
 impl Achievements {
@@ -59,7 +133,13 @@ impl Achievements {
     }
 }
 
+impl Default for Achievements {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug)]
-struct Achievement {
-    text: String,
+pub struct Achievement {
+    pub text: String,
 }

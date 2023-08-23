@@ -1,19 +1,44 @@
+use crossterm::event::KeyCode;
 use itertools::Itertools;
 use ratatui::{prelude::*, widgets::*};
 
-use crate::app::App;
+use crate::app::{
+    cards::{Achievements, Card},
+    App,
+};
 
 /// Renders the user interface widgets.
 pub fn render<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>) {
-    render_main_navigation_2(app, frame, frame.size())
+    if app.cards.achievements.is_none() && app.check_key(KeyCode::Char('A')) {
+        app.cards.achievements = Some(Achievements::new())
+    }
+
+    let area = frame.size();
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .title("Save the Planet")
+        .title_alignment(Alignment::Center)
+        .style(Style::default().fg(Color::Cyan).bg(Color::Black));
+
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    render_main_navigation(app, frame, inner);
+
+    frame.render_widget(
+        Paragraph::new(format!("old: {:?}\nnew: {:?}", app.old_key, app.key))
+            .block(Block::default().borders(Borders::all())),
+        Rect {
+            x: 30,
+            y: 10,
+            width: 22,
+            height: 6,
+        },
+    )
 }
 
 pub fn render_flyer<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>, area: Rect) {
-    // This is where you add new widgets.
-    // See the following resources:
-    // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
-    // - https://github.com/ratatui-org/ratatui/tree/master/examples
-
     let ratio = app.buyers as f64 / 1000.0;
     let show_progress = ratio >= 0.2;
 
@@ -42,15 +67,21 @@ pub fn render_flyer<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>, area: R
     }
 }
 
-pub fn render_main_navigation_2<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>, area: Rect) {
+pub fn render_main_navigation<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>, area: Rect) {
+    if app.check_key(KeyCode::Up) {
+        app.cards.previous();
+    } else if app.check_key(KeyCode::Down) {
+        app.cards.next();
+    }
+
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Length(21), Constraint::Min(0)].as_ref())
         .split(area);
 
-    let mut cards = vec!["Flyer"];
+    let mut cards = vec![Card::Flyer];
     if app.cards.achievements.is_some() {
-        cards.push("Achievements");
+        cards.push(Card::Achievements);
     }
 
     let mut state = ListState::default();
@@ -59,63 +90,54 @@ pub fn render_main_navigation_2<B: Backend>(app: &mut App, frame: &mut Frame<'_,
     let list = List::new(
         cards
             .iter()
-            .map(|c| ListItem::new(vec![Line::from(Span::raw(*c))]))
+            .map(|c| ListItem::new(vec![Line::from(Span::raw(c.text()))]))
             .collect_vec(),
     )
-    .block(Block::default().borders(Borders::ALL).title("List"))
+    .block(Block::default().borders(Borders::RIGHT))
     .highlight_style(Style::default().add_modifier(Modifier::BOLD))
     .highlight_symbol("> ");
 
     frame.render_stateful_widget(list, chunks[0], &mut state);
 
-    match app.cards.selected.as_str() {
-        "Flyer" => render_flyer(app, frame, chunks[1]),
-        "Achievements" => {}
-        _ => unreachable!(),
+    match app.cards.selected {
+        Card::Flyer => render_flyer(app, frame, chunks[1]),
+        Card::Achievements => render_achievements(app, frame, chunks[1]),
     }
 }
 
 pub fn render_text<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>, area: Rect) {
-    let counter = if app.counter > 0 {
-        format!("Counter: {}", app.counter)
-    } else {
-        "Press `Enter` to increment the counter.".to_owned()
-    };
+    if app.check_key(KeyCode::Char('f')) {
+        app.cards.flyer.available_flyers = Some(match app.cards.flyer.available_flyers {
+            Some(x) => x + 1,
+            None => 0,
+        });
+    }
 
-    let auto_clicker_buy = if app.buyers > 0 {
-        format!("Buyer: {}", app.buyers)
-    } else if app.counter >= 20 {
-        "Press `a` to buy an auto buyer for 20.".to_owned()
-    } else {
-        "".to_owned()
-    };
+    let flyer = &app.cards.flyer;
 
-    let winning = if app.buyers >= 100 {
-        "Reach 1000 Buyer to win."
-    } else {
-        ""
-    };
+    let mut lines = Vec::new();
 
-    frame.render_widget(
-        Paragraph::new(format!(
-            "This is a tui template.\n\
-                Press `Esc`, `Ctrl-C` or `q` to stop running.\n\
-                {}\n\
-                {}\n\
-                {}",
-            counter, auto_clicker_buy, winning
-        ))
-        .block(
-            Block::default()
-                .title("Template")
-                .title_alignment(Alignment::Center)
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded),
-        )
-        .style(Style::default().fg(Color::Cyan).bg(Color::Black))
-        .alignment(Alignment::Center),
-        area,
-    );
+    let string = format!("Saved {} kg CO2e", flyer.saved_co2);
+    lines.push(Line::from(string.bold()));
+
+    let flyer_line = if let Some(available) = flyer.available_flyers {
+        Line::from(format!("Flyer: {}", available))
+    } else {
+        Line::from("Press `f` to print a flyer.")
+    };
+    lines.push(flyer_line);
+
+    frame.render_widget(Paragraph::new(lines).alignment(Alignment::Center), area);
+}
+
+pub fn render_achievements<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>, area: Rect) {
+    let mut text = vec![Line::from("Unlocked Achievements".bold())];
+
+    for achievement in &app.cards.achievements.as_ref().unwrap().unlocked {
+        text.push(Line::from(achievement.text.clone()))
+    }
+
+    frame.render_widget(Paragraph::new(text).alignment(Alignment::Center), area);
 }
 
 pub fn render_progress<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>, area: Rect) {
