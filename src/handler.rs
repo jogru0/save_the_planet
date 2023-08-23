@@ -1,4 +1,4 @@
-use crate::app::{App, AppResult};
+use crate::app::{cards::Achievements, App, AppResult};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 /// Handles the key events and updates the state of [`App`].
@@ -19,9 +19,19 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
             app.increment_counter();
         }
 
+        KeyCode::Down => app.cards.next(),
+        KeyCode::Up => app.cards.previous(),
+
         // Other handlers you could add here.
         KeyCode::Char('a') => {
             app.add_buyer();
+        }
+
+        // Other handlers you could add here.
+        KeyCode::Char('A') => {
+            if app.cards.achievements.is_none() {
+                app.cards.achievements = Some(Achievements::new())
+            }
         }
 
         _ => {}

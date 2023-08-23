@@ -2,6 +2,8 @@ use std::error;
 
 use ratatui::widgets::ListState;
 
+use self::cards::Cards;
+
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -14,7 +16,7 @@ pub struct StatefulList<T> {
 impl<T> StatefulList<T> {
     pub fn with_items(items: Vec<T>) -> StatefulList<T> {
         StatefulList {
-            state: ListState::default(),
+            state: ListState::default().with_selected(Some(0)),
             items,
         }
     }
@@ -23,7 +25,7 @@ impl<T> StatefulList<T> {
         let i = match self.state.selected() {
             Some(i) => {
                 if i >= self.items.len() - 1 {
-                    0
+                    i
                 } else {
                     i + 1
                 }
@@ -37,7 +39,7 @@ impl<T> StatefulList<T> {
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.items.len() - 1
+                    i
                 } else {
                     i - 1
                 }
@@ -48,6 +50,8 @@ impl<T> StatefulList<T> {
     }
 }
 
+pub mod cards;
+
 /// Application.
 #[derive(Debug)]
 pub struct App {
@@ -57,8 +61,8 @@ pub struct App {
     pub counter: u128,
     pub buyers: u128,
     pub index: usize,
-    pub titles: Vec<&'static str>,
-    pub tasks: StatefulList<&'static str>,
+
+    pub cards: Cards,
 }
 
 impl Default for App {
@@ -68,8 +72,7 @@ impl Default for App {
             counter: 0,
             buyers: 0,
             index: 0,
-            titles: vec!["Tab0", "Tab1", "Tab2", "Tab3"],
-            tasks: StatefulList::with_items(vec!["Tab A", "Tab B", "Tab C"]),
+            cards: Cards::new(),
         }
     }
 }

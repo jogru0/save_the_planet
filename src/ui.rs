@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use ratatui::{prelude::*, widgets::*};
 
 use crate::app::App;
@@ -41,58 +42,37 @@ pub fn render_flyer<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>, area: R
     }
 }
 
-pub fn render_main_navigation<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>, area: Rect) {
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Length(21), Constraint::Min(0)].as_ref())
-        .split(area);
-
-    let block = Block::default().on_white().black();
-    frame.render_widget(block, area);
-    let titles = app
-        .titles
-        .iter()
-        .map(|t| {
-            let (first, rest) = t.split_at(1);
-            Line::from(vec![first.yellow(), rest.green()])
-        })
-        .collect();
-    let tabs = Tabs::new(titles)
-        //.block(Block::default().borders(Borders::ALL).title("Tabs"))
-        .select(app.index)
-        .style(Style::default().fg(Color::Cyan))
-        .highlight_style(
-            Style::default()
-                .add_modifier(Modifier::BOLD)
-                .bg(Color::Black),
-        )
-        .divider("\n");
-    frame.render_widget(tabs, chunks[0]);
-    match app.index {
-        0 => render_flyer(app, frame, chunks[1]),
-        1 => {}
-        2 => {}
-        3 => {}
-        _ => unreachable!(),
-    };
-}
-
 pub fn render_main_navigation_2<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>, area: Rect) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Length(21), Constraint::Min(0)].as_ref())
         .split(area);
 
-    let tasks: Vec<ListItem> = app
-        .titles
-        .iter()
-        .map(|i| ListItem::new(vec![text::Line::from(Span::raw(*i))]))
-        .collect();
-    let tasks = List::new(tasks)
-        .block(Block::default().borders(Borders::ALL).title("List"))
-        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-        .highlight_symbol("> ");
-    frame.render_stateful_widget(tasks, chunks[0], &mut app.tasks.state);
+    let mut cards = vec!["Flyer"];
+    if app.cards.achievements.is_some() {
+        cards.push("Achievements");
+    }
+
+    let mut state = ListState::default();
+    state.select(cards.iter().position(|it| it == &app.cards.selected));
+
+    let list = List::new(
+        cards
+            .iter()
+            .map(|c| ListItem::new(vec![Line::from(Span::raw(*c))]))
+            .collect_vec(),
+    )
+    .block(Block::default().borders(Borders::ALL).title("List"))
+    .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+    .highlight_symbol("> ");
+
+    frame.render_stateful_widget(list, chunks[0], &mut state);
+
+    match app.cards.selected.as_str() {
+        "Flyer" => render_flyer(app, frame, chunks[1]),
+        "Achievements" => {}
+        _ => unreachable!(),
+    }
 }
 
 pub fn render_text<B: Backend>(app: &mut App, frame: &mut Frame<'_, B>, area: Rect) {
