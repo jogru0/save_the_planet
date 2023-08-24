@@ -1,61 +1,61 @@
-use ratatui::prelude::CrosstermBackend;
-use ratatui::Terminal;
-use save_the_planet::app::{App, AppResult};
-use save_the_planet::event::{Event, EventHandler};
-use save_the_planet::tui::Tui;
-use std::io;
-use std::time::{Duration, Instant};
+use bracket_lib::terminal::{main_loop, BError, BTerm, BTermBuilder, GameState};
+use bracket_terminal::prelude::{BEvent, INPUT};
 
-fn main() -> AppResult<()> {
-    // Create an application.
-    let mut app = App::new();
+struct State {}
 
-    // Initialize the terminal user interface.
-    let backend = CrosstermBackend::new(io::stderr());
-    let terminal = Terminal::new(backend)?;
-    let events = EventHandler::new(250);
-    let mut tui = Tui::new(terminal, events);
-    tui.init()?;
+impl GameState for State {
+    fn tick(&mut self, ctx: &mut BTerm) {
+        ctx.cls();
+        let mut input = INPUT.lock();
+        let mouse_pixels = input.mouse_pixel_pos();
+        ctx.print(
+            1,
+            1,
+            &format!(
+                "Mouse pixel position: {}, {}",
+                mouse_pixels.0, mouse_pixels.1
+            ),
+        );
+        let mouse_tile = input.mouse_tile(0);
+        ctx.print(
+            1,
+            2,
+            &format!("Mouse tile position: {}, {}", mouse_tile.x, mouse_tile.y),
+        );
+        ctx.print(1, 3, &format!("FPS: {}", ctx.fps));
+        ctx.print(1, 4, &format!("Scale factor: {}", input.get_scale_factor()));
 
-    let mut last_frame = Instant::now();
-    let mut delta = Duration::default();
-
-    // Start the main loop.
-    while app.running {
-        let this_frame = Instant::now();
-        delta += this_frame - last_frame;
-
-        // Render the user interface.
-        tui.draw(&mut app)?;
-
-        // Handle events.
-        match tui.events.next()? {
-            Event::Tick => app.tick(),
-            Event::Key(key_event) => app.handle_key_events(key_event)?,
-            Event::Mouse(_) => {}
-            Event::Resize(_, _) => {}
+        for (i, btn) in input.mouse_button_pressed_set().iter().enumerate() {
+            ctx.print(1, 5 + i as i32, &format!("Mouse Button {} is pressed", btn));
         }
 
-        if app.key == app.old_key {
-            app.key = None
-        } else if app.key.is_some() {
-            app.old_key = app.key;
+        for (i, key) in input.scan_code_pressed_set().iter().enumerate() {
+            ctx.print(50, 5 + i as i32, &format!("Scan code: {}", key));
         }
 
-        let seconds = delta.as_secs();
-        delta -= Duration::from_secs(seconds);
+        for (i, key) in input.key_pressed_set().iter().enumerate() {
+            ctx.print(50, 25 + i as i32, &format!("Key code: {:?}", key));
+        }
 
-        app.simulate(seconds);
-
-        last_frame = this_frame;
+        input.for_each_message(|event| {
+            bracket_terminal::console::log(format!("{:#?}", event));
+            if event == BEvent::CloseRequested {
+                ctx.quitting = true;
+            }
+        });
     }
+}
 
-    // Exit the user interface.
-    tui.exit()?;
+fn main() -> BError {
+    let context = BTermBuilder::new()
+        .with_dimensions(80, 50)
+        .with_tile_dimensions(10, 16)
+        .with_title("Hello Minimal Bracket World")
+        .with_font("terminal_10x16.png", 10, 16)
+        .with_simple_console(80, 50, "terminal_10x16.png")
+        .with_advanced_input(true)
+        .build()?;
 
-    if app.buyers >= 1000 {
-        println!("You win!");
-    }
-
-    Ok(())
+    let gs: State = State {};
+    main_loop(context, gs)
 }
