@@ -5,7 +5,7 @@ use ratatui::{
     Terminal,
 };
 
-use crate::grid::Grid;
+use crate::grid::{Cell, Grid};
 
 use self::{
     app::{AppResult, TuiState},
@@ -19,7 +19,7 @@ use self::{
 //     Ok(())
 // }
 
-fn draw_grid<B: Backend>(ctx: &mut Terminal<B>, grid: Grid<char>) -> AppResult<()> {
+fn draw_grid<B: Backend>(ctx: &mut Terminal<B>, grid: Grid<Cell>) -> AppResult<()> {
     ctx.draw(|frame| ui::render(grid, frame))?;
     Ok(())
 

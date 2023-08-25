@@ -1,4 +1,4 @@
-use crate::grid::Grid;
+use crate::grid::{Cell, Grid};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Key {
@@ -65,22 +65,22 @@ impl World {
         Self {}
     }
 
-    pub fn update(&mut self, input: Input) -> Grid<char> {
-        let mut grid = Grid::new(50, 80, ' ');
+    pub fn update(&mut self, input: Input) -> Grid<Cell> {
+        let mut grid = Grid::new(50, 80, Cell::new());
 
         let mut view = grid.view();
 
         let mut sub_view_1 = view.sub_view(10, 10, 3, 8);
 
-        sub_view_1.fill('@');
+        sub_view_1.fill_char('@');
         let mut sub_view_2 = view.sub_view(20, 5, 3, 13);
-        sub_view_2.fill('B');
+        sub_view_2.fill_char('B');
         let mut sub_view_3 = sub_view_2.sub_view(0, 0, 2, 2);
-        sub_view_3.fill('E');
+        sub_view_3.fill_char('E');
 
         let mut sub = view.sub_view(30, 30, 15, 15);
         let mut inner = sub.block();
-        inner.fill('i');
+        inner.fill_char('i');
 
         view.print(
             2,
@@ -88,6 +88,14 @@ impl World {
             &format!("Mouse tile position: {}, {}", input.mouse_x, input.mouse_y),
         );
         view.print(3, 1, &format!("FPS: {}", input.fps));
+
+        let mut split_view = view.sub_view(40, 50, 9, 29);
+        let (mut new, del) = split_view.split_block(10);
+
+        new.fill_char('l');
+        split_view
+            .sub_view(del.0, del.1, del.2, del.3)
+            .fill_char('r');
 
         if let Some(Event::Key(key)) = input.event {
             view.print(25, 50, &format!("Key code: {:?}", key));

@@ -5,6 +5,46 @@ pub struct Grid<T> {
     width: usize,
 }
 
+#[derive(Clone, Copy)]
+pub struct Color {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub a: f32,
+}
+
+impl Color {
+    const CYAN: Color = Self {
+        r: 0.0,
+        g: 0.0,
+        b: 1.0,
+        a: 1.0,
+    };
+
+    const SOFTBG: Color = Self {
+        r: 0.2,
+        g: 0.2,
+        b: 0.1,
+        a: 1.0,
+    };
+}
+
+#[derive(Clone, Copy)]
+pub struct Cell {
+    pub character: char,
+    pub foreground: Color,
+    pub background: Color,
+}
+impl Cell {
+    pub(crate) fn new() -> Self {
+        Self {
+            character: ' ',
+            foreground: Color::CYAN,
+            background: Color::SOFTBG,
+        }
+    }
+}
+
 impl<T> Grid<T> {
     fn height(&self) -> usize {
         self.data.len() / self.width
@@ -43,15 +83,47 @@ pub struct MutGridView<'a, T> {
     // parent_view: Option<&'a mut MutGridView<'a, T>>,
 }
 
-impl<'a> MutGridView<'a, char> {
+impl<'a> MutGridView<'a, Cell> {
     pub fn print(&mut self, line_id: usize, mut char_id: usize, string: &str) {
         for char in string.chars() {
-            self[line_id][char_id] = char;
+            self[line_id][char_id].character = char;
             char_id += 1;
         }
     }
 
-    pub fn block(&mut self) -> MutGridView<'_, char> {
+    pub fn fill_char(&mut self, c: char) {
+        for line_id in 0..self.height {
+            for char_id in 0..self.width {
+                let reference_index = self.reference_index(line_id, char_id);
+                self.reference.data[reference_index].character = c;
+            }
+        }
+    }
+
+    pub fn split_block(
+        &mut self,
+        left_width: usize,
+    ) -> (MutGridView<'_, Cell>, (usize, usize, usize, usize)) {
+        self.block();
+        let sep_id = left_width + 1;
+
+        for l in 1..self.height - 1 {
+            self[l][sep_id].character = '│';
+        }
+
+        let inner_height = self.height - 2;
+        let inner_width = self.width - 3;
+
+        self[0][sep_id].character = '┬';
+        self[inner_height + 1][sep_id].character = '┴';
+
+        (
+            self.sub_view(1, 1, inner_height, left_width),
+            (1, sep_id + 1, inner_height, inner_width - left_width),
+        )
+    }
+
+    pub fn block(&mut self) -> MutGridView<'_, Cell> {
         assert!(2 <= self.width);
         assert!(2 <= self.height);
 
@@ -59,19 +131,19 @@ impl<'a> MutGridView<'a, char> {
         let last_char = self.width - 1;
 
         for l in 1..last_line {
-            self[l][0] = '│';
-            self[l][last_char] = '│';
+            self[l][0].character = '│';
+            self[l][last_char].character = '│';
         }
 
         for c in 1..last_char {
-            self[0][c] = '─';
-            self[last_line][c] = '─';
+            self[0][c].character = '─';
+            self[last_line][c].character = '─';
         }
 
-        self[0][0] = '┌';
-        self[0][last_char] = '┐';
-        self[last_line][0] = '└';
-        self[last_line][last_char] = '┘';
+        self[0][0].character = '┌';
+        self[0][last_char].character = '┐';
+        self[last_line][0].character = '└';
+        self[last_line][last_char].character = '┘';
 
         // self[0][0] = '╭';
         // self[0][last_char] = '╮';
@@ -116,18 +188,6 @@ impl<'a, T> MutGridView<'a, T> {
             width,
         }
     }
-
-    pub fn fill(&mut self, t: T)
-    where
-        T: Clone,
-    {
-        for line_id in 0..self.height {
-            for char_id in 0..self.width {
-                let reference_index = self.reference_index(line_id, char_id);
-                self.reference.data[reference_index] = t.clone();
-            }
-        }
-    }
 }
 
 impl<'a, T> Index<usize> for MutGridView<'a, T> {
@@ -147,7 +207,7 @@ impl<'a, T> IndexMut<usize> for MutGridView<'a, T> {
 
 #[cfg(test)]
 mod tests {
-    use super::Grid;
+    use super::{Cell, Grid};
 
     #[test]
     fn grid_view() {
@@ -169,21 +229,21 @@ mod tests {
 
     #[test]
     fn fill() {
-        let mut grid = Grid::new(30, 20, ' ');
+        let mut grid = Grid::new(30, 20, Cell::new());
 
         let mut view = grid.view();
 
         let mut sub_view_1 = view.sub_view(10, 10, 3, 8);
 
-        sub_view_1.fill('@');
+        sub_view_1.fill_char('@');
         let mut sub_view_2 = view.sub_view(20, 5, 3, 13);
-        sub_view_2.fill('B');
+        sub_view_2.fill_char('B');
         let mut sub_view_3 = sub_view_2.sub_view(0, 0, 2, 2);
-        sub_view_3.fill('E');
+        sub_view_3.fill_char('E');
 
         for line_id in 0..30 {
             for char_id in 0..20 {
-                print!("{}", view[line_id][char_id]);
+                print!("{}", view[line_id][char_id].character);
             }
             println!();
         }

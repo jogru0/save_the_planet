@@ -1,12 +1,15 @@
 use std::collections::HashSet;
 
-use bracket_terminal::prelude::{
-    log, main_loop, BError, BEvent, BTerm, BTermBuilder, GameState, VirtualKeyCode,
-    BACKEND_INTERNAL, INPUT,
+use bracket_terminal::{
+    prelude::{
+        log, main_loop, to_cp437, BError, BEvent, BTerm, BTermBuilder, GameState, VirtualKeyCode,
+        BACKEND_INTERNAL, INPUT, RGBA,
+    },
+    FontCharType,
 };
 
 use crate::{
-    grid::Grid,
+    grid::{Cell, Color, Grid},
     world::{Event, Input, Key, World},
 };
 
@@ -20,6 +23,17 @@ impl BTermState {
         Self {
             pressed_keys: Default::default(),
             world: World::new(),
+        }
+    }
+}
+
+impl From<Color> for RGBA {
+    fn from(value: Color) -> Self {
+        RGBA {
+            r: value.r,
+            g: value.g,
+            b: value.b,
+            a: value.a,
         }
     }
 }
@@ -80,7 +94,14 @@ impl TryFrom<VirtualKeyCode> for Key {
     type Error = ();
 }
 
-fn draw_grid(ctx: &mut BTerm, mut grid: Grid<char>) {
+fn to_cp437_or_not(c: char) -> Option<FontCharType> {
+    match to_cp437(c) {
+        0 => None,
+        f => Some(f),
+    }
+}
+
+fn draw_grid(ctx: &mut BTerm, mut grid: Grid<Cell>) {
     let mut lock = BACKEND_INTERNAL.lock();
     let console = lock.consoles[ctx.active_console].console.as_mut();
 
@@ -95,7 +116,14 @@ fn draw_grid(ctx: &mut BTerm, mut grid: Grid<char>) {
 
     for y in 0..grid.height() {
         for x in 0..grid.width() {
-            console.print(x as i32, y as i32, grid[y][x].to_string().as_str())
+            let cell = grid[y][x];
+            console.set(
+                x as i32,
+                y as i32,
+                cell.foreground.into(),
+                cell.background.into(),
+                to_cp437_or_not(cell.character).unwrap(),
+            );
         }
     }
 }
