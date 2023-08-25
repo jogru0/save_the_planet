@@ -111,7 +111,7 @@ pub fn main() -> AppResult<()> {
         // Handle events.
         let input = receive_input(&tui, &mut app)?;
 
-        let grid = app.world.update(input);
+        let grid = app.world.update(&input);
 
         draw_grid(&mut tui.terminal, grid)?;
     }

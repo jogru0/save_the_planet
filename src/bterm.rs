@@ -10,7 +10,7 @@ use bracket_terminal::{
 
 use crate::{
     grid::{Cell, Color, Grid},
-    world::{Event, Input, Key, World},
+    world::{Event, Input, Key, World, CHARS_GRID, LINES_GRID},
 };
 
 struct BTermState {
@@ -171,7 +171,7 @@ impl GameState for BTermState {
     fn tick(&mut self, ctx: &mut BTerm) {
         let input = receive_input(ctx, self);
 
-        let grid = self.world.update(input);
+        let grid = self.world.update(&input);
 
         draw_grid(ctx, grid);
     }
@@ -179,11 +179,11 @@ impl GameState for BTermState {
 
 pub fn main() -> BError {
     let context = BTermBuilder::new()
-        .with_dimensions(80, 50)
+        .with_dimensions(CHARS_GRID, LINES_GRID)
         .with_tile_dimensions(10, 16)
         .with_title("Hello Minimal Bracket World")
         .with_font("terminal_10x16.png", 10, 16)
-        .with_simple_console(80, 50, "terminal_10x16.png")
+        .with_simple_console(CHARS_GRID, LINES_GRID, "terminal_10x16.png")
         .with_advanced_input(true)
         .build()?;
 

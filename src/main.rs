@@ -8,7 +8,7 @@ mod tui;
 mod world;
 
 fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-    if true {
+    if false {
         tui::main()
     } else {
         bterm::main()

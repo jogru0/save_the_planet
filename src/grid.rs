@@ -13,18 +13,40 @@ pub struct Color {
     pub a: f32,
 }
 
+#[allow(dead_code)]
 impl Color {
-    const CYAN: Color = Self {
+    pub const CYAN: Color = Self {
         r: 0.0,
-        g: 0.0,
+        g: 1.0,
         b: 1.0,
         a: 1.0,
     };
 
-    const SOFTBG: Color = Self {
-        r: 0.2,
-        g: 0.2,
-        b: 0.1,
+    pub const GREY: Color = Self {
+        r: 0.1,
+        g: 0.1,
+        b: 0.2,
+        a: 1.0,
+    };
+
+    pub const GOLD: Color = Self {
+        r: 1.0,
+        g: 1.0,
+        b: 0.0,
+        a: 1.0,
+    };
+
+    const BLACK: Color = Self {
+        r: 0.0,
+        g: 0.0,
+        b: 0.0,
+        a: 1.0,
+    };
+
+    const WHITE: Color = Self {
+        r: 1.0,
+        g: 1.0,
+        b: 1.0,
         a: 1.0,
     };
 }
@@ -39,8 +61,8 @@ impl Cell {
     pub(crate) fn new() -> Self {
         Self {
             character: ' ',
-            foreground: Color::CYAN,
-            background: Color::SOFTBG,
+            foreground: Color::WHITE,
+            background: Color::BLACK,
         }
     }
 }
@@ -91,6 +113,20 @@ impl<'a> MutGridView<'a, Cell> {
         }
     }
 
+    pub fn print_overflowing(&mut self, mut line_id: usize, string: &str) {
+        assert_ne!(self.width, 0);
+        let mut char_id = 0;
+        for char in string.chars() {
+            self[line_id][char_id].character = char;
+            char_id += 1;
+            if char_id == self.width {
+                char_id = 0;
+                line_id += 1;
+            }
+        }
+    }
+
+    #[allow(dead_code)]
     pub fn fill_char(&mut self, c: char) {
         for line_id in 0..self.height {
             for char_id in 0..self.width {
@@ -152,9 +188,28 @@ impl<'a> MutGridView<'a, Cell> {
 
         self.sub_view(1, 1, self.height - 2, self.width - 2)
     }
+
+    pub fn _fill_background(&mut self, color: Color) {
+        self.for_all(|cell| cell.background = color)
+    }
+
+    pub fn fill_foreground(&mut self, color: Color) {
+        self.for_all(|cell| cell.foreground = color)
+    }
 }
 
 impl<'a, T> MutGridView<'a, T> {
+    fn for_all<F>(&mut self, f: F)
+    where
+        F: Fn(&mut T),
+    {
+        for line_id in 0..self.height {
+            for char_id in 0..self.width {
+                f(&mut self[line_id][char_id])
+            }
+        }
+    }
+
     pub fn height(&self) -> usize {
         self.height
     }
@@ -180,6 +235,9 @@ impl<'a, T> MutGridView<'a, T> {
         height: usize,
         width: usize,
     ) -> MutGridView<'b, T> {
+        assert!(start_line_id + height <= self.height);
+        assert!(start_char_id + width <= self.width);
+
         MutGridView::<'b, T> {
             reference: self.reference,
             start_line_id: self.start_line_id + start_line_id,
