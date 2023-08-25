@@ -24,58 +24,60 @@ impl BTermState {
     }
 }
 
-impl Key {
-    fn from(key: VirtualKeyCode) -> Option<Self> {
+impl TryFrom<VirtualKeyCode> for Key {
+    fn try_from(key: VirtualKeyCode) -> Result<Key, ()> {
         match key {
-            VirtualKeyCode::A => Some(Key::A),
-            VirtualKeyCode::B => Some(Key::B),
-            VirtualKeyCode::C => Some(Key::C),
-            VirtualKeyCode::D => Some(Key::D),
-            VirtualKeyCode::E => Some(Key::E),
-            VirtualKeyCode::F => Some(Key::F),
-            VirtualKeyCode::G => Some(Key::G),
-            VirtualKeyCode::H => Some(Key::H),
-            VirtualKeyCode::I => Some(Key::I),
-            VirtualKeyCode::J => Some(Key::J),
-            VirtualKeyCode::K => Some(Key::K),
-            VirtualKeyCode::L => Some(Key::L),
-            VirtualKeyCode::M => Some(Key::M),
-            VirtualKeyCode::N => Some(Key::N),
-            VirtualKeyCode::O => Some(Key::O),
-            VirtualKeyCode::P => Some(Key::P),
-            VirtualKeyCode::Q => Some(Key::Q),
-            VirtualKeyCode::R => Some(Key::R),
-            VirtualKeyCode::S => Some(Key::S),
-            VirtualKeyCode::T => Some(Key::T),
-            VirtualKeyCode::U => Some(Key::U),
-            VirtualKeyCode::V => Some(Key::V),
-            VirtualKeyCode::W => Some(Key::W),
-            VirtualKeyCode::X => Some(Key::X),
-            VirtualKeyCode::Y => Some(Key::Y),
-            VirtualKeyCode::Z => Some(Key::Z),
+            VirtualKeyCode::A => Ok(Key::A),
+            VirtualKeyCode::B => Ok(Key::B),
+            VirtualKeyCode::C => Ok(Key::C),
+            VirtualKeyCode::D => Ok(Key::D),
+            VirtualKeyCode::E => Ok(Key::E),
+            VirtualKeyCode::F => Ok(Key::F),
+            VirtualKeyCode::G => Ok(Key::G),
+            VirtualKeyCode::H => Ok(Key::H),
+            VirtualKeyCode::I => Ok(Key::I),
+            VirtualKeyCode::J => Ok(Key::J),
+            VirtualKeyCode::K => Ok(Key::K),
+            VirtualKeyCode::L => Ok(Key::L),
+            VirtualKeyCode::M => Ok(Key::M),
+            VirtualKeyCode::N => Ok(Key::N),
+            VirtualKeyCode::O => Ok(Key::O),
+            VirtualKeyCode::P => Ok(Key::P),
+            VirtualKeyCode::Q => Ok(Key::Q),
+            VirtualKeyCode::R => Ok(Key::R),
+            VirtualKeyCode::S => Ok(Key::S),
+            VirtualKeyCode::T => Ok(Key::T),
+            VirtualKeyCode::U => Ok(Key::U),
+            VirtualKeyCode::V => Ok(Key::V),
+            VirtualKeyCode::W => Ok(Key::W),
+            VirtualKeyCode::X => Ok(Key::X),
+            VirtualKeyCode::Y => Ok(Key::Y),
+            VirtualKeyCode::Z => Ok(Key::Z),
 
-            VirtualKeyCode::Left => Some(Key::Left),
-            VirtualKeyCode::Up => Some(Key::Up),
-            VirtualKeyCode::Right => Some(Key::Right),
-            VirtualKeyCode::Down => Some(Key::Down),
+            VirtualKeyCode::Left => Ok(Key::Left),
+            VirtualKeyCode::Up => Ok(Key::Up),
+            VirtualKeyCode::Right => Ok(Key::Right),
+            VirtualKeyCode::Down => Ok(Key::Down),
 
-            VirtualKeyCode::Key0 => Some(Key::Number0),
-            VirtualKeyCode::Key1 => Some(Key::Number1),
-            VirtualKeyCode::Key2 => Some(Key::Number2),
-            VirtualKeyCode::Key3 => Some(Key::Number3),
-            VirtualKeyCode::Key4 => Some(Key::Number4),
-            VirtualKeyCode::Key5 => Some(Key::Number5),
-            VirtualKeyCode::Key6 => Some(Key::Number6),
-            VirtualKeyCode::Key7 => Some(Key::Number7),
-            VirtualKeyCode::Key8 => Some(Key::Number8),
-            VirtualKeyCode::Key9 => Some(Key::Number9),
+            VirtualKeyCode::Key0 => Ok(Key::Number0),
+            VirtualKeyCode::Key1 => Ok(Key::Number1),
+            VirtualKeyCode::Key2 => Ok(Key::Number2),
+            VirtualKeyCode::Key3 => Ok(Key::Number3),
+            VirtualKeyCode::Key4 => Ok(Key::Number4),
+            VirtualKeyCode::Key5 => Ok(Key::Number5),
+            VirtualKeyCode::Key6 => Ok(Key::Number6),
+            VirtualKeyCode::Key7 => Ok(Key::Number7),
+            VirtualKeyCode::Key8 => Ok(Key::Number8),
+            VirtualKeyCode::Key9 => Ok(Key::Number9),
 
             _ => {
                 log(format!("unrecognized key {key:?}"));
-                None
+                Err(())
             }
         }
     }
+
+    type Error = ();
 }
 
 fn draw_grid(ctx: &mut BTerm, mut grid: Grid<char>) {
@@ -111,14 +113,15 @@ fn receive_input(ctx: &mut BTerm, state: &mut BTermState) -> Input {
                 scan_code: _,
                 pressed,
             }) => {
-                if let Some(key) = Key::from(vkey) {
+                if let Ok(key) = Key::try_from(vkey) {
                     if pressed {
                         if state.pressed_keys.insert(key) {
                             new_key = Some(key);
                         }
                     } else {
-                        let was_present = state.pressed_keys.remove(&key);
-                        assert!(was_present)
+                        state.pressed_keys.remove(&key);
+                        //Maybe it was pressed from the beginning.
+                        //assert!(was_present, "{key:?}")
                     }
                 }
             }

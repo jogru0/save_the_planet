@@ -50,6 +50,36 @@ impl<'a> MutGridView<'a, char> {
             char_id += 1;
         }
     }
+
+    pub fn block(&mut self) -> MutGridView<'_, char> {
+        assert!(2 <= self.width);
+        assert!(2 <= self.height);
+
+        let last_line = self.height - 1;
+        let last_char = self.width - 1;
+
+        for l in 1..last_line {
+            self[l][0] = '│';
+            self[l][last_char] = '│';
+        }
+
+        for c in 1..last_char {
+            self[0][c] = '─';
+            self[last_line][c] = '─';
+        }
+
+        self[0][0] = '┌';
+        self[0][last_char] = '┐';
+        self[last_line][0] = '└';
+        self[last_line][last_char] = '┘';
+
+        // self[0][0] = '╭';
+        // self[0][last_char] = '╮';
+        // self[last_line][0] = '╰';
+        // self[last_line][last_char] = '╯';
+
+        self.sub_view(1, 1, self.height - 2, self.width - 2)
+    }
 }
 
 impl<'a, T> MutGridView<'a, T> {

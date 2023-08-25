@@ -50,6 +50,7 @@ pub enum Event {
     Key(Key),
 }
 
+#[derive(Debug)]
 pub struct World {}
 
 pub struct Input {
@@ -76,6 +77,10 @@ impl World {
         sub_view_2.fill('B');
         let mut sub_view_3 = sub_view_2.sub_view(0, 0, 2, 2);
         sub_view_3.fill('E');
+
+        let mut sub = view.sub_view(30, 30, 15, 15);
+        let mut inner = sub.block();
+        inner.fill('i');
 
         view.print(
             2,
