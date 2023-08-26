@@ -28,10 +28,10 @@ impl<N: Number> QuantityType for N {
 pub struct Flyer;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
-pub struct People;
+pub struct Person;
 
 impl Number for Flyer {}
-impl Number for People {}
+impl Number for Person {}
 
 impl QuantityType for Emission {
     fn strinigy(amount: u128, residual: u128, accuracy: usize) -> String {

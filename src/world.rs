@@ -1,16 +1,8 @@
 use std::time::Instant;
 
-use crate::grid::{Cell, Color, Grid};
+use crate::grid::{Cell, Grid};
 
-use self::{
-    duration::Duration,
-    quantity::{
-        balance::Balance,
-        types::{Emission, Flyer, People},
-        Quantity,
-    },
-    rate::Rate,
-};
+use self::{cards::Cards, duration::Duration, quantity::Quantity};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Key {
@@ -66,97 +58,7 @@ mod rate;
 
 mod quantity;
 
-#[derive(Debug)]
-struct CO2 {
-    emission_balance: Balance<Emission>,
-    flyer: Quantity<Flyer>,
-    supporting_people: Quantity<People>,
-    unsupporting_people: Quantity<People>,
-    save_rate_from_flyers: Rate<Emission>,
-}
-impl CO2 {
-    fn new() -> CO2 {
-        Self {
-            emission_balance: Balance::new(),
-            flyer: Quantity::new(10),
-            supporting_people: Quantity::new(0),
-            unsupporting_people: Quantity::new(9_000_000_000),
-            save_rate_from_flyers: Rate::new(Quantity::new(0), Duration::TICK),
-        }
-    }
-}
-
-#[derive(Debug)]
-struct Milestones;
-impl Milestones {
-    fn new() -> Milestones {
-        Self {}
-    }
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-enum Card {
-    CO2,
-    Milestones,
-}
-
-impl AbstractCard for CO2 {
-    fn menu_string(&self) -> String {
-        "CO2".into()
-    }
-
-    fn color(&self) -> Color {
-        Color::CYAN
-    }
-}
-
-impl AbstractCard for Milestones {
-    fn menu_string(&self) -> String {
-        "Milestones".into()
-    }
-
-    fn color(&self) -> Color {
-        Color::GOLD
-    }
-}
-
-trait AbstractCard {
-    fn menu_string(&self) -> String;
-    fn color(&self) -> Color;
-}
-
-#[derive(Debug)]
-struct Cards {
-    selected: Card,
-    co2: CO2,
-    milestones: Option<Milestones>,
-}
-impl Cards {
-    fn new() -> Cards {
-        Self {
-            selected: Card::CO2,
-            co2: CO2::new(),
-            milestones: None,
-        }
-    }
-
-    fn available_cards(&self) -> Vec<Card> {
-        let mut result = vec![Card::CO2];
-
-        if self.milestones.is_some() {
-            result.push(Card::Milestones);
-        }
-
-        result
-    }
-
-    fn get_card(&self, card: Card) -> &dyn AbstractCard {
-        match card {
-            Card::CO2 => &self.co2,
-            Card::Milestones => self.milestones.as_ref().unwrap(),
-        }
-    }
-}
+mod cards;
 
 #[derive(Debug)]
 pub struct World {
@@ -272,15 +174,13 @@ impl World {
         };
         self.current_time = Some(current_time);
 
-        self.apply_rates(delta);
+        self.simulate(delta);
 
         self.render(input, delta)
     }
 
-    fn apply_rates(&mut self, delta: Duration) {
-        let co2_card = &mut self.cards.co2;
-
-        *co2_card.emission_balance.pos_mut() += co2_card.save_rate_from_flyers * delta
+    fn simulate(&mut self, delta: Duration) {
+        self.simulate_cards(delta);
     }
 }
 

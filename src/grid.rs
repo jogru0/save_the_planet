@@ -22,6 +22,27 @@ impl Color {
         a: 1.0,
     };
 
+    pub const WHITE: Color = Self {
+        r: 1.0,
+        g: 1.0,
+        b: 1.0,
+        a: 1.0,
+    };
+
+    pub const RED: Color = Self {
+        r: 1.0,
+        g: 0.0,
+        b: 0.0,
+        a: 1.0,
+    };
+
+    pub const ORANGE: Color = Self {
+        r: 1.0,
+        g: 0.5,
+        b: 0.0,
+        a: 1.0,
+    };
+
     pub const GREY: Color = Self {
         r: 0.1,
         g: 0.1,
@@ -29,24 +50,17 @@ impl Color {
         a: 1.0,
     };
 
-    pub const GOLD: Color = Self {
+    pub const YELLOW: Color = Self {
         r: 1.0,
         g: 1.0,
         b: 0.0,
         a: 1.0,
     };
 
-    const BLACK: Color = Self {
+    pub const BLACK: Color = Self {
         r: 0.0,
         g: 0.0,
         b: 0.0,
-        a: 1.0,
-    };
-
-    const WHITE: Color = Self {
-        r: 1.0,
-        g: 1.0,
-        b: 1.0,
         a: 1.0,
     };
 }
