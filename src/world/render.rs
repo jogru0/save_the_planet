@@ -1,6 +1,6 @@
 use crate::{
     grid::{Cell, Grid, MutGridView},
-    world::{cards::Card, Event},
+    world::Event,
 };
 
 use super::{duration::Duration, Input, Key, World};
@@ -72,31 +72,7 @@ impl World {
         assert_eq!(view.width(), CHARS_GRID);
 
         let inner = view.block();
-        self.render_co2_card(input, inner);
-    }
-
-    fn render_card(&mut self, input: &Input, view: MutGridView<'_, Cell>) {
-        assert_eq!(view.height(), LINES_MAIN_FRAME_CONTENT);
-        assert!(CHARS_CARD <= view.width());
-
-        match self.cards.selected {
-            Card::CO2 => self.render_co2_card(input, view),
-            Card::Milestones => self.render_milestones(input, view),
-            Card::Research => self.render_research(input, view),
-            Card::Staff => self.render_staff(input, view),
-        }
-    }
-
-    fn render_milestones(&self, _input: &Input, mut view: MutGridView<'_, Cell>) {
-        view.print_overflowing(0, "Here will be milestones. Trust me.")
-    }
-
-    fn render_research(&self, _input: &Input, mut view: MutGridView<'_, Cell>) {
-        view.print_overflowing(0, "Here will be research. Trust me.")
-    }
-
-    fn render_staff(&self, _input: &Input, mut view: MutGridView<'_, Cell>) {
-        view.print_overflowing(0, "Here will be stuff. Trust me.")
+        self.render_card(input, inner);
     }
 
     fn render_menu(&mut self, input: &Input, mut view: MutGridView<'_, Cell>) {

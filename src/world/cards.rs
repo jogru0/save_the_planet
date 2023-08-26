@@ -1,9 +1,14 @@
+use crate::{
+    grid::{Cell, MutGridView},
+    world::render::{CHARS_CARD, LINES_MAIN_FRAME_CONTENT},
+};
+
 use self::{
     abstract_card::AbstractCard, activism::Activism, milestones::Milestones, research::Research,
     staff::Staff,
 };
 
-use super::{duration::Duration, quantity::Quantity, World};
+use super::{duration::Duration, quantity::Quantity, Input, World};
 
 mod activism;
 mod milestones;
@@ -17,6 +22,27 @@ pub enum Card {
     Research,
     Staff,
 }
+impl Card {
+    fn simulate(self, world: &mut World, delta: Duration) {
+        match self {
+            Card::CO2 => world.simulate_card_activism(delta),
+            Card::Milestones => world.simulate_card_milestones(delta),
+            Card::Research => world.simulate_card_research(delta),
+            Card::Staff => world.simulate_card_staff(delta),
+        }
+    }
+
+    fn render(self, world: &mut World, input: &Input, view: MutGridView<'_, Cell>) {
+        match self {
+            Card::CO2 => world.render_card_activism(input, view),
+            Card::Milestones => world.render_card_milestones(input, view),
+            Card::Research => world.render_card_research(input, view),
+            Card::Staff => world.render_card_staff(input, view),
+        }
+    }
+}
+
+const ALL_CARDS: [Card; 4] = [Card::CO2, Card::Milestones, Card::Research, Card::Staff];
 
 mod abstract_card;
 
@@ -37,7 +63,15 @@ impl World {
             self.cards.milestones.discover();
         }
 
-        self.simulate_card_co2(delta);
+        for card in ALL_CARDS {
+            card.simulate(self, delta);
+        }
+    }
+
+    pub fn render_card(&mut self, input: &Input, view: MutGridView<'_, Cell>) {
+        assert_eq!(view.height(), LINES_MAIN_FRAME_CONTENT);
+        assert!(CHARS_CARD <= view.width());
+        self.cards.selected.render(self, input, view)
     }
 }
 

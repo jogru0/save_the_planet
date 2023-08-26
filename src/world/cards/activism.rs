@@ -49,7 +49,7 @@ impl Activism {
 }
 
 impl World {
-    pub fn render_co2_card(&mut self, input: &Input, mut view: MutGridView<'_, Cell>) {
+    pub(super) fn render_card_activism(&mut self, input: &Input, mut view: MutGridView<'_, Cell>) {
         let co2_card = &mut self.cards.co2;
 
         view.print(
@@ -98,7 +98,7 @@ impl World {
         );
     }
 
-    pub fn simulate_card_co2(&mut self, delta: Duration) {
+    pub(super) fn simulate_card_activism(&mut self, delta: Duration) {
         let co2_card = &mut self.cards.co2;
 
         *co2_card.emission_balance.pos_mut() += co2_card.save_rate_from_flyers * delta

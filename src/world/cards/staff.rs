@@ -1,6 +1,10 @@
 use crate::{
-    grid::Color,
-    world::quantity::{types::Person, Quantity},
+    grid::{Cell, Color, MutGridView},
+    world::{
+        duration::Duration,
+        quantity::{types::Person, Quantity},
+        Input, World,
+    },
 };
 
 use super::abstract_card::AbstractCard;
@@ -21,14 +25,20 @@ impl AbstractCard for Staff {
 
 #[derive(Debug)]
 pub struct Staff {
-    researcher: Quantity<Person>,
-    activists: Quantity<Person>,
+    _researcher: Quantity<Person>,
+    _activists: Quantity<Person>,
 }
 impl Staff {
     pub fn new() -> Staff {
         Staff {
-            researcher: Quantity::default(),
-            activists: Quantity::default(),
+            _researcher: Quantity::default(),
+            _activists: Quantity::default(),
         }
     }
+}
+
+impl World {
+    pub(super) fn render_card_staff(&mut self, _input: &Input, mut _view: MutGridView<'_, Cell>) {}
+
+    pub(super) fn simulate_card_staff(&mut self, _delta: Duration) {}
 }
