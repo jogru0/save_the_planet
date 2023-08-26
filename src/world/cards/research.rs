@@ -1,6 +1,6 @@
 use crate::grid::Color;
 
-use super::AbstractCard;
+use super::abstract_card::AbstractCard;
 
 #[derive(Debug)]
 pub struct Research {}

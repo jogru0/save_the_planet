@@ -12,9 +12,9 @@ use crate::{
     },
 };
 
-use super::AbstractCard;
+use super::abstract_card::AbstractCard;
 
-impl AbstractCard for CO2 {
+impl AbstractCard for Activism {
     fn menu_string(&self) -> String {
         "CO2".into()
     }
@@ -29,15 +29,15 @@ impl AbstractCard for CO2 {
 }
 
 #[derive(Debug)]
-pub struct CO2 {
+pub struct Activism {
     pub emission_balance: Balance<Emission>,
     pub flyer: Quantity<Flyer>,
     pub supporting_people: Quantity<Person>,
     pub unsupporting_people: Quantity<Person>,
     pub save_rate_from_flyers: Rate<Emission>,
 }
-impl CO2 {
-    pub fn new() -> CO2 {
+impl Activism {
+    pub fn new() -> Activism {
         Self {
             emission_balance: Balance::new(),
             flyer: Quantity::new(10),

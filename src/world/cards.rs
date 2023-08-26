@@ -1,13 +1,12 @@
-mod co2;
-
-use crate::grid::Color;
-
-use self::{co2::CO2, milestones::Milestones, research::Research, staff::Staff};
+use self::{
+    abstract_card::AbstractCard, activism::Activism, milestones::Milestones, research::Research,
+    staff::Staff,
+};
 
 use super::{duration::Duration, quantity::Quantity, World};
 
+mod activism;
 mod milestones;
-
 mod research;
 mod staff;
 
@@ -19,16 +18,12 @@ pub enum Card {
     Staff,
 }
 
-pub trait AbstractCard {
-    fn menu_string(&self) -> String;
-    fn color(&self) -> Color;
-    fn is_visible(&self) -> bool;
-}
+mod abstract_card;
 
 #[derive(Debug)]
 pub struct Cards {
     pub selected: Card,
-    co2: CO2,
+    co2: Activism,
     milestones: Milestones,
     research: Research,
     staff: Staff,
@@ -50,7 +45,7 @@ impl Cards {
     pub fn new() -> Cards {
         Self {
             selected: Card::CO2,
-            co2: CO2::new(),
+            co2: Activism::new(),
             milestones: Milestones::new(),
             staff: Staff::new(),
             research: Research::new(),

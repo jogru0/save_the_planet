@@ -3,7 +3,7 @@ use crate::{
     world::quantity::{types::Person, Quantity},
 };
 
-use super::AbstractCard;
+use super::abstract_card::AbstractCard;
 
 impl AbstractCard for Staff {
     fn menu_string(&self) -> String {
