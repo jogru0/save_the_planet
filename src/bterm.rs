@@ -122,7 +122,12 @@ fn draw_grid(ctx: &mut BTerm, mut grid: Grid<Cell>) {
                 y as i32,
                 cell.foreground.into(),
                 cell.background.into(),
-                to_cp437_or_not(cell.character).unwrap(),
+                to_cp437_or_not(cell.character).unwrap_or_else(|| {
+                    panic!(
+                        "glyph '{}' cannot be rendered.",
+                        cell.character.escape_unicode()
+                    )
+                }),
             );
         }
     }
