@@ -78,8 +78,8 @@ mod duration {
 
     pub const TICKS_PER_MICROSECOND: u128 = 100;
 
-    pub const TICKS_PER_MIN: u128 = TICKS_PER_SECOND * SECONDS_PER_MIN;
-    pub const TICKS_PER_HOUR: u128 = TICKS_PER_MIN * MINS_PER_HOUR;
+    pub const TICKS_PER_MINUTE: u128 = TICKS_PER_SECOND * SECONDS_PER_MIN;
+    pub const TICKS_PER_HOUR: u128 = TICKS_PER_MINUTE * MINS_PER_HOUR;
     pub const TICKS_PER_DAY: u128 = TICKS_PER_HOUR * HOURS_PER_DAY;
 
     pub const TICKS_PER_YEAR: u128 = TICKS_PER_DAY * DAYS_PER_YEAR;
@@ -130,12 +130,15 @@ mod duration {
     }
 
     impl Duration {
-        pub fn ticks(&self) -> u128 {
+        pub const fn ticks(&self) -> u128 {
             self.ticks
         }
 
         pub const SECOND: Self = Duration {
             ticks: TICKS_PER_SECOND,
+        };
+        pub const MINUTE: Self = Duration {
+            ticks: TICKS_PER_MINUTE,
         };
 
         pub const MICROSECOND: Self = Duration {

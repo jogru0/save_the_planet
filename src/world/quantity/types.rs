@@ -39,3 +39,7 @@ impl QuantityType for Emission {
         format!("{}g", f64)
     }
 }
+
+#[derive(Default, Debug, Clone, Copy, PartialEq)]
+pub struct ResearchPoints;
+impl Number for ResearchPoints {}

@@ -18,9 +18,9 @@ impl<Q: QuantityType> Quantity<Q> {
         self.amount += inc;
     }
 
-    pub fn fraction(n: u128, d: u128) -> Self {
-        assert_ne!(d, 0);
-        assert_eq!(GRANULARITY % d, 0);
+    pub const fn fraction(n: u128, d: u128) -> Self {
+        assert!(d != 0);
+        assert!(GRANULARITY % d == 0);
         let full = n / d;
         let rest = n % d;
 
@@ -29,7 +29,18 @@ impl<Q: QuantityType> Quantity<Q> {
         Self {
             amount: full,
             residual,
-            _phantom: Default::default(),
+            _phantom: PhantomData,
+        }
+    }
+
+    pub(crate) fn saturating_sub(&mut self, amount: Self) -> Self {
+        if &amount <= self {
+            *self -= amount;
+            amount
+        } else {
+            let actual = *self;
+            *self = Self::default();
+            actual
         }
     }
 }
@@ -176,8 +187,9 @@ impl<Q: QuantityType> Quantity<Q> {
         self.amount
     }
 
-    pub fn divide_exactly(&mut self, divisor: u128) {
-        assert_ne!(divisor, 0);
+    #[must_use]
+    pub const fn divide_exactly(mut self, divisor: u128) -> Self {
+        assert!(divisor != 0);
 
         let amount_not_accounted_for = self.amount % divisor;
         self.amount /= divisor;
@@ -186,15 +198,17 @@ impl<Q: QuantityType> Quantity<Q> {
         let residual_not_accounted_for = self.residual % divisor;
         self.residual /= divisor;
 
-        assert_eq!(residual_not_accounted_for, 0);
-        assert!(self.residual < GRANULARITY)
+        assert!(residual_not_accounted_for == 0);
+        assert!(self.residual < GRANULARITY);
+
+        self
     }
 
-    pub fn new(amount: u128) -> Self {
+    pub const fn new(amount: u128) -> Self {
         Self {
             amount,
             residual: 0,
-            _phantom: Default::default(),
+            _phantom: PhantomData,
         }
     }
 

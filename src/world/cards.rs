@@ -49,7 +49,7 @@ mod abstract_card;
 #[derive(Debug)]
 pub struct Cards {
     pub selected: Card,
-    co2: Activism,
+    activism: Activism,
     milestones: Milestones,
     research: Research,
     staff: Staff,
@@ -58,7 +58,7 @@ pub struct Cards {
 impl World {
     pub fn simulate_cards(&mut self, delta: Duration) {
         if !self.cards.milestones.is_visible()
-            && self.cards.co2.emission_balance.balance() >= (Quantity::new(1000))
+            && self.cards.activism.emission_balance.balance() >= (Quantity::new(1000))
         {
             self.cards.milestones.discover();
         }
@@ -79,7 +79,7 @@ impl Cards {
     pub fn new() -> Cards {
         Self {
             selected: Card::CO2,
-            co2: Activism::new(),
+            activism: Activism::new(),
             milestones: Milestones::new(),
             staff: Staff::new(),
             research: Research::new(),
@@ -95,7 +95,7 @@ impl Cards {
 
     pub fn get_card(&self, card: Card) -> &dyn AbstractCard {
         match card {
-            Card::CO2 => &self.co2,
+            Card::CO2 => &self.activism,
             Card::Milestones => &self.milestones,
             Card::Research => &self.research,
             Card::Staff => &self.staff,

@@ -35,6 +35,8 @@ pub struct Activism {
     pub supporting_people: Quantity<Person>,
     pub unsupporting_people: Quantity<Person>,
     pub save_rate_from_flyers: Rate<Emission>,
+    pub flyer_persuasiveness: Quantity<Person>,
+    pub flyer_effectiveness: Rate<Emission>,
 }
 impl Activism {
     pub fn new() -> Activism {
@@ -44,13 +46,16 @@ impl Activism {
             supporting_people: Quantity::new(0),
             unsupporting_people: Quantity::new(9_000_000_000),
             save_rate_from_flyers: Rate::new(Quantity::new(0), Duration::TICK),
+
+            flyer_persuasiveness: Quantity::fraction(1, 10),
+            flyer_effectiveness: Rate::new(Quantity::new(100_000), Duration::YEAR),
         }
     }
 }
 
 impl World {
     pub(super) fn render_card_activism(&mut self, input: &Input, mut view: MutGridView<'_, Cell>) {
-        let co2_card = &mut self.cards.co2;
+        let co2_card = &mut self.cards.activism;
 
         view.print(
             0,
@@ -64,18 +69,19 @@ impl World {
         match input.event {
             Some(Event::Key(Key::F)) => co2_card.flyer += 1,
             Some(Event::Key(Key::H)) => {
-                if Quantity::fraction(1, 10) <= co2_card.unsupporting_people
+                if co2_card.unsupporting_people > Quantity::default()
                     && co2_card.flyer.try_pay(Quantity::new(1))
                 {
                     let previous_supporting_people = co2_card.supporting_people.whole_amount();
-                    co2_card.supporting_people += Quantity::fraction(1, 10);
-                    co2_card.unsupporting_people -= Quantity::fraction(1, 10);
+                    let reduction = co2_card
+                        .unsupporting_people
+                        .saturating_sub(co2_card.flyer_persuasiveness);
+                    co2_card.supporting_people += reduction;
                     let new_supporters =
                         co2_card.supporting_people.whole_amount() - previous_supporting_people;
                     assert!(new_supporters == 0 || new_supporters == 1);
 
-                    co2_card.save_rate_from_flyers +=
-                        Rate::new(Quantity::new(100_000) * new_supporters, Duration::YEAR)
+                    co2_card.save_rate_from_flyers += new_supporters * co2_card.flyer_effectiveness
                 }
             }
             _ => {}
@@ -99,7 +105,7 @@ impl World {
     }
 
     pub(super) fn simulate_card_activism(&mut self, delta: Duration) {
-        let co2_card = &mut self.cards.co2;
+        let co2_card = &mut self.cards.activism;
 
         *co2_card.emission_balance.pos_mut() += co2_card.save_rate_from_flyers * delta
     }
