@@ -10,7 +10,10 @@ use bracket_terminal::{
 
 use crate::{
     grid::{Cell, Color, Grid},
-    world::{Event, Input, Key, World, CHARS_GRID, LINES_GRID},
+    world::{
+        render::{CHARS_GRID, LINES_GRID},
+        Event, Input, Key, World,
+    },
 };
 
 struct BTermState {
