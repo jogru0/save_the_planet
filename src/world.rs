@@ -4,8 +4,12 @@ use crate::grid::{Cell, Color, Grid, MutGridView};
 
 use self::{
     duration::Duration,
+    quantity::{
+        balance::Balance,
+        types::{Emission, Flyer, People},
+        Quantity,
+    },
     rate::Rate,
-    resource::{balance::Balance, Resource},
 };
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
@@ -60,24 +64,24 @@ pub enum Event {
 
 mod rate;
 
-mod resource;
+mod quantity;
 
 #[derive(Debug)]
 struct CO2 {
-    emission_balance: Balance,
-    flyer: Resource,
-    supporting_people: Resource,
-    unsupporting_people: Resource,
-    save_rate_from_flyers: Rate,
+    emission_balance: Balance<Emission>,
+    flyer: Quantity<Flyer>,
+    supporting_people: Quantity<People>,
+    unsupporting_people: Quantity<People>,
+    save_rate_from_flyers: Rate<Emission>,
 }
 impl CO2 {
     fn new() -> CO2 {
         Self {
             emission_balance: Balance::new(),
-            flyer: Resource::new(10),
-            supporting_people: Resource::new(0),
-            unsupporting_people: Resource::new(9_000_000_000),
-            save_rate_from_flyers: Rate::new(Resource::new(0), Duration::TICK),
+            flyer: Quantity::new(10),
+            supporting_people: Quantity::new(0),
+            unsupporting_people: Quantity::new(9_000_000_000),
+            save_rate_from_flyers: Rate::new(Quantity::new(0), Duration::TICK),
         }
     }
 }
@@ -280,7 +284,9 @@ impl World {
         let mut grid = Grid::new(LINES_GRID, CHARS_GRID, Cell::new());
         let mut view = grid.view();
 
-        if self.cards.milestones.is_none() && self.cards.co2.emission_balance.is_at_least(1000) {
+        if self.cards.milestones.is_none()
+            && self.cards.co2.emission_balance.balance() >= (Quantity::new(1000))
+        {
             self.cards.milestones = Some(Milestones::new())
         }
 
@@ -342,42 +348,47 @@ impl World {
             0,
             &format!(
                 "Saved CO2e: {}",
-                co2_card.emission_balance.print_as_weight()
+                co2_card.emission_balance.balance().stringify(2)
             ),
         );
 
         match input.event {
             Some(Event::Key(Key::F)) => co2_card.flyer += 1,
             Some(Event::Key(Key::H)) => {
-                if 1 <= co2_card.unsupporting_people.whole_amount() && co2_card.flyer.try_pay(1) {
+                if Quantity::fraction(1, 10) <= co2_card.unsupporting_people
+                    && co2_card.flyer.try_pay(Quantity::new(1))
+                {
                     let previous_supporting_people = co2_card.supporting_people.whole_amount();
-                    co2_card.supporting_people += Resource::fraction(1, 10);
+                    co2_card.supporting_people += Quantity::fraction(1, 10);
+                    co2_card.unsupporting_people -= Quantity::fraction(1, 10);
                     let new_supporters =
                         co2_card.supporting_people.whole_amount() - previous_supporting_people;
-                    assert!(new_supporters <= 1);
-                    let success = co2_card.unsupporting_people.try_pay(new_supporters);
-                    assert!(success);
+                    assert!(new_supporters == 0 || new_supporters == 1);
+
                     co2_card.save_rate_from_flyers +=
-                        Rate::new(Resource::new(100_000) * new_supporters, Duration::YEAR)
+                        Rate::new(Quantity::new(100_000) * new_supporters, Duration::YEAR)
                 }
             }
             _ => {}
         }
 
-        view.print(1, 0, &format!("Flyer: {}", co2_card.flyer.as_f64()));
-        view.print(2, 0, &format!(" Rate: {}", co2_card.save_rate_from_flyers));
+        view.print(1, 0, &format!("Flyer: {}", co2_card.flyer.stringify(0)));
+        view.print(
+            2,
+            0,
+            &format!(" Rate: {}", co2_card.save_rate_from_flyers.stringify(4)),
+        );
         view.print(
             3,
             0,
-            &format!(" Supp: {} /", co2_card.supporting_people.as_f64()),
+            &format!(" Supp: {} /", co2_card.supporting_people.stringify(0)),
         );
         view.print(
             4,
             7,
-            &format!(
-                "{}",
-                (co2_card.supporting_people + co2_card.unsupporting_people).as_f64()
-            ),
+            &(co2_card.supporting_people + co2_card.unsupporting_people)
+                .stringify(0)
+                .to_string(),
         );
     }
 
