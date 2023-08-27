@@ -60,73 +60,11 @@ mod quantity;
 
 mod cards;
 
-mod message {
-
-    pub struct Messages {
-        entries: Vec<Message>,
-        current_duration: Duration,
-        current_position: usize,
-    }
-    impl Messages {
-        pub fn new() -> Self {
-            Self {
-                entries: vec![Message::new(String::new(), Duration::INSTANT)],
-                current_duration: Duration::INSTANT,
-                current_position: 0,
-            }
-        }
-    }
-
-    use crate::{
-        grid::{Cell, MutGridView},
-        world::render::{CHARS_GRID, LINES_MESSAGES},
-    };
-
-    use super::{duration::Duration, Input, World};
-
-    pub struct Message {
-        text: String,
-        duration: Duration,
-    }
-
-    impl Message {
-        pub fn new(text: String, duration: Duration) -> Self {
-            Self { text, duration }
-        }
-    }
-
-    impl World {
-        pub fn queue_message(&mut self, message: Message) {
-            self.messages.entries.push(message);
-        }
-
-        pub fn render_message(
-            &mut self,
-            _input: &Input,
-            delta: Duration,
-            mut view: MutGridView<'_, Cell>,
-        ) {
-            assert_eq!(view.height(), LINES_MESSAGES);
-            assert_eq!(view.width(), CHARS_GRID);
-
-            let current = &self.messages.entries[self.messages.current_position];
-
-            view.print_overflowing(1, &current.text);
-            self.messages.current_duration += delta;
-
-            if self.messages.current_position + 1 < self.messages.entries.len()
-                && current.duration <= self.messages.current_duration
-            {
-                self.messages.current_duration = Duration::INSTANT;
-                self.messages.current_position += 1;
-            }
-        }
-    }
-}
+mod message;
 
 pub struct World {
     cards: Cards,
-    current_time: Option<Instant>,
+    total_ticks: Duration,
     messages: Messages,
 }
 
@@ -138,9 +76,12 @@ pub struct Input {
 }
 
 mod duration {
-    use std::ops::{AddAssign, Mul, MulAssign};
 
-    pub const TICKS_PER_MICROSECOND: u128 = 100;
+    //TODO
+    use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
+
+    pub const NANOSECONDS_PER_TICK: u128 = 10;
+    pub const TICKS_PER_MICROSECOND: u128 = NANO / MICRO / NANOSECONDS_PER_TICK;
 
     pub const TICKS_PER_MINUTE: u128 = TICKS_PER_SECOND * SECONDS_PER_MIN;
     pub const TICKS_PER_HOUR: u128 = TICKS_PER_MINUTE * MINS_PER_HOUR;
@@ -171,16 +112,40 @@ mod duration {
 
     pub const MILLI: u128 = 1_000;
     pub const MICRO: u128 = 1_000 * MILLI;
-    // pub const NANO: u128 = 1_000 * MICRO;
+    pub const NANO: u128 = 1_000 * MICRO;
 
-    #[derive(Clone, Copy, PartialEq, PartialOrd)]
+    #[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
     pub struct Duration {
         ticks: u128,
     }
 
+    impl SubAssign for Duration {
+        fn sub_assign(&mut self, rhs: Self) {
+            self.ticks -= rhs.ticks
+        }
+    }
+
     impl AddAssign for Duration {
         fn add_assign(&mut self, rhs: Self) {
-            self.ticks += rhs.ticks;
+            self.ticks += rhs.ticks
+        }
+    }
+
+    impl Sub for Duration {
+        type Output = Self;
+
+        fn sub(mut self, rhs: Self) -> Self::Output {
+            self -= rhs;
+            self
+        }
+    }
+
+    impl Add for Duration {
+        type Output = Self;
+
+        fn add(mut self, rhs: Self) -> Self::Output {
+            self += rhs;
+            self
         }
     }
 
@@ -225,36 +190,62 @@ mod duration {
         pub fn as_millis(&self) -> f64 {
             self.ticks as f64 / TICKS_PER_MILLISECOND as f64
         }
+
+        pub(crate) fn from_time_duration_rounded_down(time_duration: std::time::Duration) -> Self {
+            Self {
+                ticks: time_duration.as_nanos() / NANOSECONDS_PER_TICK,
+            }
+        }
     }
 }
 
-impl World {
-    pub fn new() -> Self {
+pub struct Reality {
+    simulation: World,
+    simulation_start_time: Option<Instant>,
+    ticks_at_simulation_start: Duration,
+}
+impl Reality {
+    pub fn new(world: World) -> Self {
         Self {
-            cards: Cards::new(),
-            current_time: None,
-            messages: Messages::new(),
+            ticks_at_simulation_start: world.total_ticks,
+            simulation: world,
+            simulation_start_time: None,
         }
     }
 
     pub fn update(&mut self, input: &Input) -> Grid<Cell> {
         let current_time = Instant::now();
-        let delta = if let Some(time) = self.current_time {
-            let micros = (current_time - time).as_micros();
-            assert!(0 < micros);
-            micros * Duration::MICROSECOND
-        } else {
-            Duration::INSTANT
-        };
-        self.current_time = Some(current_time);
+        let ticks_since_simulation_start =
+            if let Some(simulation_start_time) = self.simulation_start_time {
+                assert!(simulation_start_time <= current_time);
+                Duration::from_time_duration_rounded_down(current_time - simulation_start_time)
+            } else {
+                self.simulation_start_time = Some(current_time);
+                Duration::INSTANT
+            };
 
-        self.simulate(delta);
+        let total_ticks = ticks_since_simulation_start + self.ticks_at_simulation_start;
 
-        self.render(input, delta)
+        self.simulation.simulate(total_ticks);
+        self.simulation.render(input)
+    }
+}
+impl World {
+    pub fn new() -> Self {
+        Self {
+            cards: Cards::new(),
+            messages: Messages::new(),
+            total_ticks: Duration::INSTANT,
+        }
     }
 
-    fn simulate(&mut self, delta: Duration) {
+    fn simulate(&mut self, total_ticks: Duration) {
+        assert!(self.total_ticks <= total_ticks);
+        let delta = total_ticks - self.total_ticks;
+
+        self.total_ticks += delta;
         self.simulate_cards(delta);
+        self.messages.simulate(delta);
     }
 }
 

@@ -12,20 +12,20 @@ use crate::{
     grid::{Cell, Color, Grid},
     world::{
         render::{CHARS_GRID, LINES_GRID},
-        Event, Input, Key, World,
+        Event, Input, Key, Reality, World,
     },
 };
 
 struct BTermState {
     pressed_keys: HashSet<Key>,
-    world: World,
+    simulation: Reality,
 }
 
 impl BTermState {
     pub fn new() -> Self {
         Self {
             pressed_keys: Default::default(),
-            world: World::new(),
+            simulation: Reality::new(World::new()),
         }
     }
 }
@@ -179,7 +179,7 @@ impl GameState for BTermState {
     fn tick(&mut self, ctx: &mut BTerm) {
         let input = receive_input(ctx, self);
 
-        let grid = self.world.update(&input);
+        let grid = self.simulation.update(&input);
 
         draw_grid(ctx, grid);
     }

@@ -1,5 +1,7 @@
 use std::ops::{Index, IndexMut, Range};
 
+use self::text::Text;
+
 pub struct Grid<T> {
     data: Vec<T>,
     width: usize,
@@ -33,6 +35,20 @@ impl Color {
         r: 1.0,
         g: 0.0,
         b: 0.0,
+        a: 1.0,
+    };
+
+    pub const GREEN: Color = Self {
+        r: 0.0,
+        g: 1.0,
+        b: 0.0,
+        a: 1.0,
+    };
+
+    pub const BLUE: Color = Self {
+        r: 0.0,
+        g: 0.0,
+        b: 1.0,
         a: 1.0,
     };
 
@@ -71,12 +87,76 @@ pub struct Cell {
     pub foreground: Color,
     pub background: Color,
 }
+
+pub struct PreCell {
+    pub character: Option<char>,
+    pub foreground: Option<Color>,
+    pub background: Option<Color>,
+}
+impl PreCell {
+    pub fn new(
+        character: Option<char>,
+        foreground: Option<Color>,
+        backgroun: Option<Color>,
+    ) -> Self {
+        Self {
+            character,
+            foreground,
+            background: backgroun,
+        }
+    }
+}
+
 impl Cell {
     pub(crate) fn new() -> Self {
         Self {
             character: ' ',
             foreground: Color::WHITE,
             background: Color::BLACK,
+        }
+    }
+
+    fn apply(&mut self, pre_cell: &PreCell) {
+        if let Some(character) = pre_cell.character {
+            self.character = character;
+        }
+        if let Some(foreground) = pre_cell.foreground {
+            self.foreground = foreground;
+        }
+        if let Some(backgound) = pre_cell.background {
+            self.background = backgound;
+        }
+    }
+}
+
+pub mod text {
+
+    use super::{Color, PreCell};
+
+    pub struct Text {
+        entries: Vec<PreCell>,
+    }
+
+    impl Text {
+        pub fn new() -> Self {
+            Self {
+                entries: Vec::new(),
+            }
+        }
+
+        pub fn raw(self, string: &str) -> Self {
+            self.styled(string, None, None)
+        }
+
+        pub fn styled(mut self, string: &str, fg: Option<Color>, bg: Option<Color>) -> Self {
+            for char in string.chars() {
+                self.entries.push(PreCell::new(Some(char), fg, bg))
+            }
+            self
+        }
+
+        pub(crate) fn pre_cells(&self) -> impl Iterator<Item = &PreCell> {
+            self.entries.iter()
         }
     }
 }
@@ -127,11 +207,11 @@ impl<'a> MutGridView<'a, Cell> {
         }
     }
 
-    pub fn print_overflowing(&mut self, mut line_id: usize, string: &str) {
+    pub fn print_overflowing(&mut self, mut line_id: usize, text: &Text) {
         assert_ne!(self.width, 0);
         let mut char_id = 0;
-        for char in string.chars() {
-            self[line_id][char_id].character = char;
+        for pre_cell in text.pre_cells() {
+            self[line_id][char_id].apply(pre_cell);
             char_id += 1;
             if char_id == self.width {
                 char_id = 0;

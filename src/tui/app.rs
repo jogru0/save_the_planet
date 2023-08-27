@@ -1,6 +1,6 @@
 use std::{collections::HashSet, error};
 
-use crate::world::{Key, World};
+use crate::world::{Key, Reality, World};
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error + Send + Sync>>;
@@ -12,7 +12,7 @@ pub struct TuiState {
     pub counter: u8,
 
     pub pressed_keys: HashSet<Key>,
-    pub world: World,
+    pub simulation: Reality,
 }
 
 impl Default for TuiState {
@@ -21,7 +21,7 @@ impl Default for TuiState {
             running: true,
             counter: 0,
             pressed_keys: Default::default(),
-            world: World::new(),
+            simulation: Reality::new(World::new()),
         }
     }
 }

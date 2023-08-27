@@ -100,7 +100,7 @@ mod main {
 }
 mod prolog {
     use crate::{
-        grid::{Cell, MutGridView},
+        grid::{text::Text, Cell, MutGridView},
         world::{quantity::Quantity, Event, Input, Key, World},
     };
 
@@ -137,7 +137,7 @@ mod prolog {
                 - self.cards.activism.flyer.whole_amount()) as usize;
             let text = FLYER_HANDOUT_TEXTS[text_id];
 
-            view.print_overflowing(0, text);
+            view.print_overflowing(0, &Text::new().raw(text));
 
             if let Some(Event::Key(Key::H)) = input.event {
                 let success = self.handout_flyer();
@@ -152,7 +152,7 @@ mod prolog {
             };
             let text = FLYER_PRINT_TEXTS[step];
 
-            view.print_overflowing(0, text);
+            view.print_overflowing(0, &Text::new().raw(text));
 
             if let Some(Event::Key(Key::F)) = input.event {
                 let success = self.print_flyer();
@@ -212,7 +212,7 @@ impl World {
         assert!(self.cards.activism.maximal_emission_deficit < new_maximal_deficit);
         self.cards.activism.maximal_emission_deficit = new_maximal_deficit;
 
-        self.queue_message(Message::new(
+        self.messages.queue(Message::new(
             format!(
                 "Increased maximal emission deficit to {}",
                 new_maximal_deficit.stringify(2)

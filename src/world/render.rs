@@ -1,9 +1,9 @@
 use crate::{
-    grid::{Cell, Grid, MutGridView},
+    grid::{text::Text, Cell, Color, Grid, MutGridView},
     world::Event,
 };
 
-use super::{duration::Duration, Input, Key, World};
+use super::{Input, Key, World};
 
 pub const LINES_MAIN_FRAME_CONTENT: usize = 10;
 pub const LINES_MAIN_FRAME: usize = LINES_MAIN_FRAME_CONTENT + 2;
@@ -15,12 +15,7 @@ pub const CHARS_CARD: usize = 23;
 pub const CHARS_GRID: usize = CHARS_MENU + CHARS_CARD + 3;
 
 impl World {
-    fn render_bottom_area(
-        &mut self,
-        input: &Input,
-        delta: Duration,
-        mut view: MutGridView<'_, Cell>,
-    ) {
+    fn render_bottom_area(&mut self, input: &Input, mut view: MutGridView<'_, Cell>) {
         assert_eq!(view.height(), LINES_MESSAGES);
         assert_eq!(view.width(), CHARS_GRID);
 
@@ -29,8 +24,6 @@ impl World {
             0,
             &format!("Mouse tile position: {}, {}", input.mouse_x, input.mouse_y),
         );
-        view.print(1, 0, &format!("Delta: {}ms", delta.as_millis()));
-        view.print(1, 16, &format!("FPS: {}", input.fps));
 
         if let Some(Event::Key(key)) = input.event {
             view.print(2, 0, &format!("Key code: {:?}", key));
@@ -38,7 +31,16 @@ impl World {
             view.print(2, 0, "Messages can appear here.")
         }
 
-        self.render_message(input, delta, view);
+        if let Some(message) = self.messages.get_current() {
+            let color = match (self.total_ticks.as_millis() as u128 / 50) % 3 {
+                0 => Color::RED,
+                1 => Color::GREEN,
+                2 => Color::BLUE,
+                _ => unreachable!(),
+            };
+
+            view.print_overflowing(0, &Text::new().styled(message.text(), None, Some(color)))
+        }
     }
 
     fn render_main_navigation(&mut self, input: &Input, mut view: MutGridView<'_, Cell>) {
@@ -54,7 +56,7 @@ impl World {
         self.render_card(input, right);
     }
 
-    pub fn render(&mut self, input: &Input, delta: Duration) -> Grid<Cell> {
+    pub fn render(&mut self, input: &Input) -> Grid<Cell> {
         let mut grid = Grid::new(LINES_GRID, CHARS_GRID, Cell::new());
         let mut view = grid.view();
 
@@ -69,7 +71,7 @@ impl World {
 
         let bottom_view: MutGridView<'_, Cell> =
             view.sub_view(LINES_MAIN_FRAME, 0, LINES_MESSAGES, CHARS_GRID);
-        self.render_bottom_area(input, delta, bottom_view);
+        self.render_bottom_area(input, bottom_view);
 
         grid
     }
