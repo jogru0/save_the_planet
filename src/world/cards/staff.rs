@@ -1,9 +1,10 @@
 use crate::{
+    duration::Duration,
     grid::{Cell, Color, MutGridView},
+    input::Input,
     world::{
-        duration::Duration,
         quantity::{types::Person, Quantity},
-        Input, World,
+        World,
     },
 };
 

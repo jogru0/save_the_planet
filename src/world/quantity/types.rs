@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::world::duration::GRANULARITY;
+use crate::duration::GRANULARITY;
 
 use super::{Quantity, QuantityType};
 

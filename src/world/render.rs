@@ -1,9 +1,9 @@
 use crate::{
     grid::{text::Text, Cell, Color, Grid, MutGridView},
-    world::Event,
+    input::{Event, Input, Key},
 };
 
-use super::{Input, Key, World};
+use super::World;
 
 pub const LINES_MAIN_FRAME_CONTENT: usize = 10;
 pub const LINES_MAIN_FRAME: usize = LINES_MAIN_FRAME_CONTENT + 2;
@@ -22,13 +22,13 @@ impl World {
         view.print(
             0,
             0,
-            &format!("Mouse tile position: {}, {}", input.mouse_x, input.mouse_y),
+            format!("Mouse tile position: {}, {}", input.mouse_x, input.mouse_y).into(),
         );
 
         if let Some(Event::Key(key)) = input.event {
-            view.print(2, 0, &format!("Key code: {:?}", key));
+            view.print(2, 0, format!("Key code: {:?}", key).into());
         } else {
-            view.print(2, 0, "Messages can appear here.")
+            view.print(2, 0, "Messages can appear here.".to_owned().into())
         }
 
         if let Some(message) = self.messages.get_current() {
@@ -105,7 +105,14 @@ impl World {
 
         for (line, card) in available_cards.into_iter().enumerate() {
             let char_id = if card == self.cards.selected { 1 } else { 0 };
-            view.print(line, char_id, &self.cards.get_card(card).menu_string());
+
+            let card = self.cards.get_card(card);
+
+            view.print(
+                line,
+                char_id,
+                Text::new().styled(&card.menu_string(), Some(card.color()), None),
+            );
         }
     }
 }

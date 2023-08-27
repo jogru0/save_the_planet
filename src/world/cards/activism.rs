@@ -1,7 +1,8 @@
 use crate::{
+    duration::Duration,
     grid::{Cell, Color, MutGridView},
+    input::Input,
     world::{
-        duration::Duration,
         message::Message,
         quantity::{
             balance::Balance,
@@ -9,7 +10,7 @@ use crate::{
             Quantity,
         },
         rate::Rate,
-        Input, World,
+        World,
     },
 };
 
@@ -50,7 +51,8 @@ impl Stage {
 mod main {
     use crate::{
         grid::{Cell, MutGridView},
-        world::{Event, Input, Key, World},
+        input::{Event, Input, Key},
+        world::World,
     };
 
     impl World {
@@ -74,26 +76,32 @@ mod main {
             view.print(
                 0,
                 0,
-                &format!(
+                format!(
                     "Saved CO2e: {}",
                     activism.emission_balance.balance().stringify(2)
-                ),
+                )
+                .into(),
             );
 
-            view.print(1, 0, &format!("Flyer: {}", activism.flyer.stringify(0)));
+            view.print(
+                1,
+                0,
+                format!("Flyer: {}", activism.flyer.stringify(0)).into(),
+            );
             view.print(
                 2,
                 0,
-                &format!(" Rate: {}", activism.save_rate_from_flyers.stringify(4)),
+                format!(" Rate: {}", activism.save_rate_from_flyers.stringify(4)).into(),
             );
             view.print(
                 3,
                 0,
-                &format!(
+                format!(
                     " Supp: {} / {}",
                     activism.supporting_people.stringify(0),
                     &(activism.supporting_people + activism.unsupporting_people).stringify(0)
-                ),
+                )
+                .into(),
             );
         }
     }
@@ -101,7 +109,8 @@ mod main {
 mod prolog {
     use crate::{
         grid::{text::Text, Cell, MutGridView},
-        world::{quantity::Quantity, Event, Input, Key, World},
+        input::{Event, Input, Key},
+        world::{quantity::Quantity, World},
     };
 
     use super::{INITIAL_NUMBER_OF_FLYERS_AND_INVERSE_OF_PERSUASIVENESS, NUMBER_OF_PROLOG_STEPS};

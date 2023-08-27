@@ -1,6 +1,8 @@
 use crate::{
+    duration::Duration,
     grid::{Cell, Color, MutGridView},
-    world::{duration::Duration, Input, World},
+    input::Input,
+    world::World,
 };
 
 use super::abstract_card::AbstractCard;

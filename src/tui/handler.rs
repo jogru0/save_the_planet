@@ -1,7 +1,7 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::prelude::Backend;
 
-use crate::world::{Event as MyEvent, Input, Key};
+use crate::input::{Event as MyEvent, Input, Key};
 
 use super::{
     app::{AppResult, TuiState},

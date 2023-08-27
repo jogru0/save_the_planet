@@ -1,6 +1,6 @@
 use std::ops::{AddAssign, Mul, MulAssign};
 
-use crate::world::duration::Duration;
+use crate::duration::Duration;
 
 use super::{quantity::QuantityType, Quantity};
 

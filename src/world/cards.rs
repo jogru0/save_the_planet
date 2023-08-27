@@ -1,5 +1,7 @@
 use crate::{
+    duration::Duration,
     grid::{Cell, MutGridView},
+    input::Input,
     world::render::{CHARS_CARD, LINES_MAIN_FRAME_CONTENT},
 };
 
@@ -8,7 +10,7 @@ use self::{
     staff::Staff,
 };
 
-use super::{duration::Duration, quantity::Quantity, Input, World};
+use super::{quantity::Quantity, World};
 
 mod activism;
 mod milestones;

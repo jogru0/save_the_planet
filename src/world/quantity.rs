@@ -4,7 +4,7 @@ use std::{
     ops::{Add, AddAssign, Mul, Sub, SubAssign},
 };
 
-use super::duration::GRANULARITY;
+use crate::duration::GRANULARITY;
 
 pub mod balance;
 
@@ -80,7 +80,7 @@ pub mod types;
 pub mod signed {
     use std::ops::{Mul, MulAssign};
 
-    use crate::world::duration::GRANULARITY;
+    use crate::duration::GRANULARITY;
 
     use super::{Quantity, QuantityType};
 

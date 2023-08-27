@@ -1,6 +1,6 @@
 use std::{collections::HashSet, error};
 
-use crate::world::{Key, Reality, World};
+use crate::{input::Key, reality::Reality, world::World};
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error + Send + Sync>>;
@@ -15,21 +15,15 @@ pub struct TuiState {
     pub simulation: Reality,
 }
 
-impl Default for TuiState {
-    fn default() -> Self {
+impl TuiState {
+    /// Constructs a new instance of [`App`].
+    pub fn new(world: World) -> Self {
         Self {
             running: true,
             counter: 0,
             pressed_keys: Default::default(),
-            simulation: Reality::new(World::new()),
+            simulation: Reality::new(world),
         }
-    }
-}
-
-impl TuiState {
-    /// Constructs a new instance of [`App`].
-    pub fn new() -> Self {
-        Self::default()
     }
 
     /// Handles the tick event of the terminal.

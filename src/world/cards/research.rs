@@ -1,13 +1,14 @@
 use crate::{
+    duration::Duration,
     grid::{Cell, Color, MutGridView},
+    input::Input,
     world::{
-        duration::Duration,
         quantity::{
             types::{Emission, Person, ResearchPoints},
             Quantity,
         },
         rate::Rate,
-        Input, World,
+        World,
     },
 };
 
@@ -91,11 +92,12 @@ impl World {
             view.print(
                 0,
                 0,
-                &format!(
+                format!(
                     "Progress: {} / {}",
                     progress.stringify(2),
                     res.cost().stringify(2)
-                ),
+                )
+                .into(),
             );
         }
     }

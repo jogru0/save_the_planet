@@ -10,9 +10,11 @@ use bracket_terminal::{
 
 use crate::{
     grid::{Cell, Color, Grid},
+    input::{Event, Input, Key},
+    reality::Reality,
     world::{
         render::{CHARS_GRID, LINES_GRID},
-        Event, Input, Key, Reality, World,
+        World,
     },
 };
 
@@ -22,10 +24,10 @@ struct BTermState {
 }
 
 impl BTermState {
-    pub fn new() -> Self {
+    pub fn new(world: World) -> Self {
         Self {
             pressed_keys: Default::default(),
-            simulation: Reality::new(World::new()),
+            simulation: Reality::new(world),
         }
     }
 }
@@ -185,7 +187,7 @@ impl GameState for BTermState {
     }
 }
 
-pub fn main() -> BError {
+pub fn main(world: World) -> BError {
     let context = BTermBuilder::new()
         .with_dimensions(CHARS_GRID, LINES_GRID)
         .with_tile_dimensions(10, 16)
@@ -195,6 +197,6 @@ pub fn main() -> BError {
         .with_advanced_input(true)
         .build()?;
 
-    let gs: BTermState = BTermState::new();
+    let gs: BTermState = BTermState::new(world);
     main_loop(context, gs)
 }

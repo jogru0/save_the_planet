@@ -137,6 +137,12 @@ pub mod text {
         entries: Vec<PreCell>,
     }
 
+    impl From<String> for Text {
+        fn from(value: String) -> Self {
+            Text::new().raw(&value)
+        }
+    }
+
     impl Text {
         pub fn new() -> Self {
             Self {
@@ -200,9 +206,9 @@ pub struct MutGridView<'a, T> {
 }
 
 impl<'a> MutGridView<'a, Cell> {
-    pub fn print(&mut self, line_id: usize, mut char_id: usize, string: &str) {
-        for char in string.chars() {
-            self[line_id][char_id].character = char;
+    pub fn print(&mut self, line_id: usize, mut char_id: usize, text: Text) {
+        for pre_cell in text.pre_cells() {
+            self[line_id][char_id].apply(pre_cell);
             char_id += 1;
         }
     }

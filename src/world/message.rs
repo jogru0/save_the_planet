@@ -31,7 +31,7 @@ impl Messages {
 
 use std::collections::VecDeque;
 
-use super::duration::Duration;
+use crate::duration::Duration;
 
 pub struct Message {
     text: String,

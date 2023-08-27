@@ -5,7 +5,10 @@ use ratatui::{
     Terminal,
 };
 
-use crate::grid::{Cell, Grid};
+use crate::{
+    grid::{Cell, Grid},
+    world::World,
+};
 
 use self::{
     app::{AppResult, TuiState},
@@ -95,9 +98,9 @@ pub mod tui_impl;
 /// Event handler.
 pub mod handler;
 
-pub fn main() -> AppResult<()> {
+pub fn main(world: World) -> AppResult<()> {
     // Create an application.
-    let mut app = TuiState::new();
+    let mut app = TuiState::new(world);
 
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());
