@@ -22,31 +22,11 @@ pub enum Card {
     Research,
     Staff,
 }
-impl Card {
-    fn simulate(self, world: &mut World, delta: Duration) {
-        match self {
-            Card::CO2 => world.simulate_card_activism(delta),
-            Card::Milestones => world.simulate_card_milestones(delta),
-            Card::Research => world.simulate_card_research(delta),
-            Card::Staff => world.simulate_card_staff(delta),
-        }
-    }
-
-    fn render(self, world: &mut World, input: &Input, view: MutGridView<'_, Cell>) {
-        match self {
-            Card::CO2 => world.render_card_activism(input, view),
-            Card::Milestones => world.render_card_milestones(input, view),
-            Card::Research => world.render_card_research(input, view),
-            Card::Staff => world.render_card_staff(input, view),
-        }
-    }
-}
 
 const ALL_CARDS: [Card; 4] = [Card::CO2, Card::Milestones, Card::Research, Card::Staff];
 
 mod abstract_card;
 
-#[derive(Debug)]
 pub struct Cards {
     pub selected: Card,
     activism: Activism,
@@ -64,14 +44,24 @@ impl World {
         }
 
         for card in ALL_CARDS {
-            card.simulate(self, delta);
+            match card {
+                Card::CO2 => self.simulate_card_activism(delta),
+                Card::Milestones => self.simulate_card_milestones(delta),
+                Card::Research => self.simulate_card_research(delta),
+                Card::Staff => self.simulate_card_staff(delta),
+            }
         }
     }
 
     pub fn render_card(&mut self, input: &Input, view: MutGridView<'_, Cell>) {
         assert_eq!(view.height(), LINES_MAIN_FRAME_CONTENT);
         assert!(CHARS_CARD <= view.width());
-        self.cards.selected.render(self, input, view)
+        match self.cards.selected {
+            Card::CO2 => self.render_card_activism(input, view),
+            Card::Milestones => self.render_card_milestones(input, view),
+            Card::Research => self.render_card_research(input, view),
+            Card::Staff => self.render_card_staff(input, view),
+        }
     }
 }
 

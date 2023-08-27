@@ -1,7 +1,7 @@
 use std::{
     fmt::Debug,
     marker::PhantomData,
-    ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
+    ops::{Add, AddAssign, Mul, Sub, SubAssign},
 };
 
 use super::duration::GRANULARITY;
@@ -77,54 +77,69 @@ pub trait QuantityType: Default + Debug + Copy + PartialEq {
 
 pub mod types;
 
-pub struct SignedQuantity<Q: QuantityType> {
-    absolute_value: Quantity<Q>,
-    is_not_negative: bool,
-}
+pub mod signed {
+    use std::ops::{Mul, MulAssign};
 
-impl<Q: QuantityType> Mul<Quantity<Q>> for u128 {
-    type Output = Quantity<Q>;
+    use crate::world::duration::GRANULARITY;
 
-    fn mul(self, mut rhs: Quantity<Q>) -> Self::Output {
-        rhs *= self;
-        rhs
+    use super::{Quantity, QuantityType};
+
+    pub struct SignedQuantity<Q: QuantityType> {
+        absolute_value: Quantity<Q>,
+        is_not_negative: bool,
     }
-}
 
-impl<Q: QuantityType> MulAssign<u128> for Quantity<Q> {
-    fn mul_assign(&mut self, rhs: u128) {
-        let small_part = rhs % GRANULARITY;
-        let big_part = rhs / GRANULARITY;
+    impl<Q: QuantityType> Mul<Quantity<Q>> for u128 {
+        type Output = Quantity<Q>;
 
-        self.amount *= rhs;
-
-        let residual = self.residual;
-        self.residual = 0;
-
-        self.amount += big_part * residual;
-        self.increase_residual(small_part * residual);
+        fn mul(self, mut rhs: Quantity<Q>) -> Self::Output {
+            rhs *= self;
+            rhs
+        }
     }
-}
 
-impl<Q: QuantityType> SignedQuantity<Q> {
-    pub fn stringify(&self, prec: usize) -> String {
-        let sign_char = if self.is_not_negative { '+' } else { '-' };
-        format!("{}{}", sign_char, self.absolute_value.stringify(prec))
+    impl<Q: QuantityType> MulAssign<u128> for Quantity<Q> {
+        fn mul_assign(&mut self, rhs: u128) {
+            let small_part = rhs % GRANULARITY;
+            let big_part = rhs / GRANULARITY;
+
+            self.amount *= rhs;
+
+            let residual = self.residual;
+            self.residual = 0;
+
+            self.amount += big_part * residual;
+            self.increase_residual(small_part * residual);
+        }
     }
-}
 
-impl<Q: QuantityType> PartialEq<Quantity<Q>> for SignedQuantity<Q> {
-    fn eq(&self, other: &Quantity<Q>) -> bool {
-        self.is_not_negative && &self.absolute_value == other
+    impl<Q: QuantityType> SignedQuantity<Q> {
+        pub fn new(absolute_value: Quantity<Q>, is_not_negative: bool) -> Self {
+            Self {
+                absolute_value,
+                is_not_negative,
+            }
+        }
+
+        pub fn stringify(&self, prec: usize) -> String {
+            let sign_char = if self.is_not_negative { '+' } else { '-' };
+            format!("{}{}", sign_char, self.absolute_value.stringify(prec))
+        }
     }
-}
 
-impl<Q: QuantityType> PartialOrd<Quantity<Q>> for SignedQuantity<Q> {
-    fn partial_cmp(&self, other: &Quantity<Q>) -> Option<std::cmp::Ordering> {
-        if self.is_not_negative {
-            self.absolute_value.partial_cmp(other)
-        } else {
-            Some(std::cmp::Ordering::Less)
+    impl<Q: QuantityType> PartialEq<Quantity<Q>> for SignedQuantity<Q> {
+        fn eq(&self, other: &Quantity<Q>) -> bool {
+            self.is_not_negative && &self.absolute_value == other
+        }
+    }
+
+    impl<Q: QuantityType> PartialOrd<Quantity<Q>> for SignedQuantity<Q> {
+        fn partial_cmp(&self, other: &Quantity<Q>) -> Option<std::cmp::Ordering> {
+            if self.is_not_negative {
+                self.absolute_value.partial_cmp(other)
+            } else {
+                Some(std::cmp::Ordering::Less)
+            }
         }
     }
 }

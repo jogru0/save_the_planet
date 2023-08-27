@@ -15,7 +15,12 @@ pub const CHARS_CARD: usize = 23;
 pub const CHARS_GRID: usize = CHARS_MENU + CHARS_CARD + 3;
 
 impl World {
-    fn render_messages(&self, input: &Input, delta: Duration, mut view: MutGridView<'_, Cell>) {
+    fn render_bottom_area(
+        &mut self,
+        input: &Input,
+        delta: Duration,
+        mut view: MutGridView<'_, Cell>,
+    ) {
         assert_eq!(view.height(), LINES_MESSAGES);
         assert_eq!(view.width(), CHARS_GRID);
 
@@ -32,6 +37,8 @@ impl World {
         } else {
             view.print(2, 0, "Messages can appear here.")
         }
+
+        self.render_message(input, delta, view);
     }
 
     fn render_main_navigation(&mut self, input: &Input, mut view: MutGridView<'_, Cell>) {
@@ -62,7 +69,7 @@ impl World {
 
         let bottom_view: MutGridView<'_, Cell> =
             view.sub_view(LINES_MAIN_FRAME, 0, LINES_MESSAGES, CHARS_GRID);
-        self.render_messages(input, delta, bottom_view);
+        self.render_bottom_area(input, delta, bottom_view);
 
         grid
     }

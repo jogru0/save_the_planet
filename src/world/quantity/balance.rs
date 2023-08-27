@@ -1,6 +1,6 @@
-use super::{Quantity, QuantityType, SignedQuantity};
+use super::{signed::SignedQuantity, Quantity, QuantityType};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Balance<Q: QuantityType> {
     pos: Quantity<Q>,
     neg: Quantity<Q>,
@@ -14,19 +14,16 @@ impl<Q: QuantityType> Balance<Q> {
             (false, self.pos, self.neg)
         };
 
-        SignedQuantity {
-            absolute_value: bigger - smaller,
-            is_not_negative,
-        }
+        SignedQuantity::new(bigger - smaller, is_not_negative)
     }
 
     pub fn pos_mut(&mut self) -> &mut Quantity<Q> {
         &mut self.pos
     }
 
-    // pub fn neg_mut(&mut self) -> &mut Resource {
-    //     &mut self.neg
-    // }
+    pub fn neg_mut(&mut self) -> &mut Quantity<Q> {
+        &mut self.neg
+    }
 
     // pub fn pos(&self) -> &Resource {
     //     &self.pos

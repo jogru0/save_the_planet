@@ -127,18 +127,18 @@ impl<'a> MutGridView<'a, Cell> {
         }
     }
 
-    // pub fn print_overflowing(&mut self, mut line_id: usize, string: &str) {
-    //     assert_ne!(self.width, 0);
-    //     let mut char_id = 0;
-    //     for char in string.chars() {
-    //         self[line_id][char_id].character = char;
-    //         char_id += 1;
-    //         if char_id == self.width {
-    //             char_id = 0;
-    //             line_id += 1;
-    //         }
-    //     }
-    // }
+    pub fn print_overflowing(&mut self, mut line_id: usize, string: &str) {
+        assert_ne!(self.width, 0);
+        let mut char_id = 0;
+        for char in string.chars() {
+            self[line_id][char_id].character = char;
+            char_id += 1;
+            if char_id == self.width {
+                char_id = 0;
+                line_id += 1;
+            }
+        }
+    }
 
     #[allow(dead_code)]
     pub fn fill_char(&mut self, c: char) {

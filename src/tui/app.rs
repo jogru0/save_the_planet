@@ -5,8 +5,6 @@ use crate::world::{Key, World};
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error + Send + Sync>>;
 
-/// Application.
-#[derive(Debug)]
 pub struct TuiState {
     /// Is the application running?
     pub running: bool,

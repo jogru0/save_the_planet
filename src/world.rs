@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use crate::grid::{Cell, Grid};
 
-use self::{cards::Cards, duration::Duration, quantity::Quantity};
+use self::{cards::Cards, duration::Duration, message::Messages, quantity::Quantity};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Key {
@@ -60,10 +60,74 @@ mod quantity;
 
 mod cards;
 
-#[derive(Debug)]
+mod message {
+
+    pub struct Messages {
+        entries: Vec<Message>,
+        current_duration: Duration,
+        current_position: usize,
+    }
+    impl Messages {
+        pub fn new() -> Self {
+            Self {
+                entries: vec![Message::new(String::new(), Duration::INSTANT)],
+                current_duration: Duration::INSTANT,
+                current_position: 0,
+            }
+        }
+    }
+
+    use crate::{
+        grid::{Cell, MutGridView},
+        world::render::{CHARS_GRID, LINES_MESSAGES},
+    };
+
+    use super::{duration::Duration, Input, World};
+
+    pub struct Message {
+        text: String,
+        duration: Duration,
+    }
+
+    impl Message {
+        pub fn new(text: String, duration: Duration) -> Self {
+            Self { text, duration }
+        }
+    }
+
+    impl World {
+        pub fn queue_message(&mut self, message: Message) {
+            self.messages.entries.push(message);
+        }
+
+        pub fn render_message(
+            &mut self,
+            _input: &Input,
+            delta: Duration,
+            mut view: MutGridView<'_, Cell>,
+        ) {
+            assert_eq!(view.height(), LINES_MESSAGES);
+            assert_eq!(view.width(), CHARS_GRID);
+
+            let current = &self.messages.entries[self.messages.current_position];
+
+            view.print_overflowing(1, &current.text);
+            self.messages.current_duration += delta;
+
+            if self.messages.current_position + 1 < self.messages.entries.len()
+                && current.duration <= self.messages.current_duration
+            {
+                self.messages.current_duration = Duration::INSTANT;
+                self.messages.current_position += 1;
+            }
+        }
+    }
+}
+
 pub struct World {
     cards: Cards,
     current_time: Option<Instant>,
+    messages: Messages,
 }
 
 pub struct Input {
@@ -74,7 +138,7 @@ pub struct Input {
 }
 
 mod duration {
-    use std::ops::{Mul, MulAssign};
+    use std::ops::{AddAssign, Mul, MulAssign};
 
     pub const TICKS_PER_MICROSECOND: u128 = 100;
 
@@ -109,9 +173,15 @@ mod duration {
     pub const MICRO: u128 = 1_000 * MILLI;
     // pub const NANO: u128 = 1_000 * MICRO;
 
-    #[derive(Clone, Copy)]
+    #[derive(Clone, Copy, PartialEq, PartialOrd)]
     pub struct Duration {
         ticks: u128,
+    }
+
+    impl AddAssign for Duration {
+        fn add_assign(&mut self, rhs: Self) {
+            self.ticks += rhs.ticks;
+        }
     }
 
     impl Mul<Duration> for u128 {
@@ -163,6 +233,7 @@ impl World {
         Self {
             cards: Cards::new(),
             current_time: None,
+            messages: Messages::new(),
         }
     }
 
