@@ -33,6 +33,8 @@ use std::collections::VecDeque;
 
 use crate::duration::Duration;
 
+pub const STANDARD_MESSAGE_DURATION: Duration = Duration::from_seconds(5);
+
 pub struct Message {
     text: String,
     duration: Duration,

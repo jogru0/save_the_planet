@@ -213,7 +213,7 @@ impl<'a> MutGridView<'a, Cell> {
         }
     }
 
-    pub fn print_overflowing(&mut self, mut line_id: usize, text: &Text) {
+    pub fn print_overflowing(&mut self, mut line_id: usize, text: Text) {
         assert_ne!(self.width, 0);
         let mut char_id = 0;
         for pre_cell in text.pre_cells() {

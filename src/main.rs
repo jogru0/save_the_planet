@@ -56,6 +56,23 @@ mod input {
         Number8,
         Number9,
     }
+    impl Key {
+        pub(crate) fn number(number: usize) -> Self {
+            match number {
+                0 => Self::Number0,
+                1 => Self::Number1,
+                2 => Self::Number2,
+                3 => Self::Number3,
+                4 => Self::Number4,
+                5 => Self::Number5,
+                6 => Self::Number6,
+                7 => Self::Number7,
+                8 => Self::Number8,
+                9 => Self::Number9,
+                _ => panic!("{:?}", number),
+            }
+        }
+    }
 
     pub enum Event {
         Key(Key),
@@ -73,6 +90,11 @@ mod duration {
 
     //TODO
     use std::ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign};
+
+    use crate::world::{
+        quantity::{Quantity, QuantityType},
+        rate::Rate,
+    };
 
     pub const NANOSECONDS_PER_TICK: u128 = 10;
     pub const TICKS_PER_MICROSECOND: u128 = NANO / MICRO / NANOSECONDS_PER_TICK;
@@ -174,7 +196,7 @@ mod duration {
             ticks: TICKS_PER_MICROSECOND,
         };
 
-        pub const TICK: Self = Duration { ticks: 1 };
+        // const TICK: Self = Duration { ticks: 1 };
         pub const INSTANT: Self = Duration { ticks: 0 };
 
         pub const YEAR: Self = Duration {
@@ -189,6 +211,47 @@ mod duration {
             Self {
                 ticks: time_duration.as_nanos() / NANOSECONDS_PER_TICK,
             }
+        }
+
+        pub(crate) fn from_quantity_and_rate_approximation<Q: QuantityType>(
+            quantity: Quantity<Q>,
+            rate: Rate<Q>,
+        ) -> Self {
+            let rate_per_second_as_f64 = rate.per(Duration::SECOND).as_f64();
+            let quantity_f64 = quantity.as_f64();
+
+            Self {
+                ticks: (quantity_f64 / rate_per_second_as_f64 * TICKS_PER_SECOND as f64).ceil()
+                    as u128,
+            }
+        }
+
+        pub const fn from_seconds(seconds: u128) -> Duration {
+            Self {
+                ticks: seconds * TICKS_PER_SECOND,
+            }
+        }
+
+        pub fn stringify(&self, precision: usize) -> String {
+            let precision_factor = 10_u128.pow(precision as u32);
+
+            let (base, base_str) = if &Self::MINUTE <= self {
+                (Self::MINUTE, "min")
+            } else {
+                (Self::SECOND, "s")
+            };
+
+            let divisor_ticks = base.ticks / precision_factor;
+            assert_ne!(divisor_ticks, 0);
+
+            let value_rounded_up = (self.ticks + divisor_ticks - 1) / divisor_ticks;
+
+            format!(
+                "{:.*}{}",
+                precision,
+                value_rounded_up as f64 / precision_factor as f64,
+                base_str
+            )
         }
     }
 }

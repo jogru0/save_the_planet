@@ -43,6 +43,10 @@ impl<Q: QuantityType> Quantity<Q> {
             actual
         }
     }
+
+    pub(crate) fn as_f64(&self) -> f64 {
+        self.amount as f64 + (self.residual as f64) / GRANULARITY as f64
+    }
 }
 
 impl<Q: QuantityType> AddAssign for Quantity<Q> {
@@ -202,8 +206,7 @@ impl<Q: QuantityType> Quantity<Q> {
         self.amount
     }
 
-    #[must_use]
-    pub const fn divide_exactly(mut self, divisor: u128) -> Self {
+    pub const fn divide_with_remainder(mut self, divisor: u128) -> (Self, u128) {
         assert!(divisor != 0);
 
         let amount_not_accounted_for = self.amount % divisor;
@@ -213,10 +216,16 @@ impl<Q: QuantityType> Quantity<Q> {
         let residual_not_accounted_for = self.residual % divisor;
         self.residual /= divisor;
 
-        assert!(residual_not_accounted_for == 0);
         assert!(self.residual < GRANULARITY);
 
-        self
+        (self, residual_not_accounted_for)
+    }
+
+    #[must_use]
+    pub const fn divide_exactly(self, divisor: u128) -> Self {
+        let (result, remainder) = self.divide_with_remainder(divisor);
+        assert!(remainder == 0);
+        result
     }
 
     pub const fn new(amount: u128) -> Self {

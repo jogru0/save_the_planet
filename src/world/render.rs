@@ -39,7 +39,7 @@ impl World {
                 _ => unreachable!(),
             };
 
-            view.print_overflowing(0, &Text::new().styled(message.text(), None, Some(color)))
+            view.print_overflowing(0, Text::new().styled(message.text(), None, Some(color)))
         }
     }
 

@@ -3,7 +3,7 @@ use crate::{
     grid::{Cell, Color, MutGridView},
     input::Input,
     world::{
-        message::Message,
+        message::{Message, STANDARD_MESSAGE_DURATION},
         quantity::{
             balance::Balance,
             types::{Emission, Flyer, Person},
@@ -146,7 +146,7 @@ mod prolog {
                 - self.cards.activism.flyer.whole_amount()) as usize;
             let text = FLYER_HANDOUT_TEXTS[text_id];
 
-            view.print_overflowing(0, &Text::new().raw(text));
+            view.print_overflowing(0, Text::new().raw(text));
 
             if let Some(Event::Key(Key::H)) = input.event {
                 let success = self.handout_flyer();
@@ -161,7 +161,7 @@ mod prolog {
             };
             let text = FLYER_PRINT_TEXTS[step];
 
-            view.print_overflowing(0, &Text::new().raw(text));
+            view.print_overflowing(0, Text::new().raw(text));
 
             if let Some(Event::Key(Key::F)) = input.event {
                 let success = self.print_flyer();
@@ -206,7 +206,7 @@ impl Activism {
             flyer: Quantity::new(INITIAL_NUMBER_OF_FLYERS_AND_INVERSE_OF_PERSUASIVENESS),
             supporting_people: Quantity::new(0),
             unsupporting_people: Quantity::new(9_000_000_000),
-            save_rate_from_flyers: Rate::new(Quantity::new(0), Duration::TICK),
+            save_rate_from_flyers: Rate::default(),
 
             flyer_persuasiveness: INITIAL_FLYER_PERSUASIVENESS,
             flyer_effectiveness: INITIAL_FLYER_EFFECTIVENESS,
@@ -226,7 +226,7 @@ impl World {
                 "Increased maximal emission deficit to {}",
                 new_maximal_deficit.stringify(2)
             ),
-            10 * Duration::SECOND,
+            STANDARD_MESSAGE_DURATION,
         ))
     }
 

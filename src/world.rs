@@ -2,9 +2,8 @@ use crate::duration::Duration;
 
 use self::{cards::Cards, message::Messages, quantity::Quantity};
 
-mod rate;
-
-mod quantity;
+pub mod quantity;
+pub mod rate;
 
 mod cards;
 

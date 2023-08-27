@@ -4,7 +4,7 @@ use crate::duration::Duration;
 
 use super::{quantity::QuantityType, Quantity};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Rate<Q: QuantityType> {
     difference_per_tick: Quantity<Q>,
 }
@@ -23,7 +23,7 @@ impl<Q: QuantityType> Rate<Q> {
         }
     }
 
-    fn per(self, duration: Duration) -> Quantity<Q> {
+    pub fn per(self, duration: Duration) -> Quantity<Q> {
         self * duration
     }
 
