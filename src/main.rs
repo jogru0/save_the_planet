@@ -236,7 +236,7 @@ mod duration {
             let precision_factor = 10_u128.pow(precision as u32);
 
             let (base, base_str) = if &Self::MINUTE <= self {
-                (Self::MINUTE, "min")
+                (Self::SECOND, "s")
             } else {
                 (Self::SECOND, "s")
             };

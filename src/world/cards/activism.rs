@@ -164,7 +164,7 @@ mod prolog {
             view.print_overflowing(0, Text::new().raw(text));
 
             if let Some(Event::Key(Key::F)) = input.event {
-                let success = self.print_flyer();
+                let success = self.manually_create_flyer();
                 assert_eq!(success, step == NUMBER_OF_PROLOG_STEPS - 1);
                 self.cards.activism.stage.step_forward();
                 if step == NUMBER_OF_PROLOG_STEPS - 2 {
@@ -196,6 +196,8 @@ pub struct Activism {
     pub flyer_effectiveness: Rate<Emission>,
     pub flyer_print_cost: Quantity<Emission>,
     pub maximal_emission_deficit: Quantity<Emission>,
+
+    pub has_recycling: bool,
 }
 impl Activism {
     pub fn new() -> Activism {
@@ -212,6 +214,8 @@ impl Activism {
             flyer_effectiveness: INITIAL_FLYER_EFFECTIVENESS,
             flyer_print_cost: INITIAL_FLYER_PRINT_COST,
             maximal_emission_deficit: Quantity::default(),
+
+            has_recycling: false,
         }
     }
 }
@@ -266,6 +270,14 @@ impl World {
         }
     }
 
+    fn manually_create_flyer(&mut self) -> bool {
+        if self.cards.activism.has_recycling {
+            self.recycle_flyer()
+        } else {
+            self.print_flyer()
+        }
+    }
+
     fn print_flyer(&mut self) -> bool {
         let mut theoretical_balance = self.cards.activism.emission_balance;
         *theoretical_balance.neg_mut() += self.cards.activism.flyer_print_cost;
@@ -276,6 +288,11 @@ impl World {
         }
 
         *self.cards.activism.emission_balance.neg_mut() += self.cards.activism.flyer_print_cost;
+        self.cards.activism.flyer += 1;
+        true
+    }
+
+    fn recycle_flyer(&mut self) -> bool {
         self.cards.activism.flyer += 1;
         true
     }

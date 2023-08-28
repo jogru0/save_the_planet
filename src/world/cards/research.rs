@@ -24,12 +24,14 @@ pub enum Project {
     BetterGuidelines1,
     BetterGuidelines2,
     CatchierFlyer1,
+    Recycling,
 }
 
-const ALL_PROJECTS: [Project; 3] = [
+const ALL_PROJECTS: [Project; 4] = [
     Project::BetterGuidelines1,
     Project::BetterGuidelines2,
     Project::CatchierFlyer1,
+    Project::Recycling,
 ];
 
 const FLYER_EFFECTIVENESS_0: Rate<Emission> = Rate::new(Quantity::new(100_000), Duration::YEAR);
@@ -37,7 +39,7 @@ const FLYER_EFFECTIVENESS_1: Rate<Emission> = Rate::new(Quantity::new(150_000), 
 const FLYER_EFFECTIVENESS_2: Rate<Emission> = Rate::new(Quantity::new(500_000), Duration::YEAR);
 
 const CATCHIER_FLYER_0: Quantity<Person> = Quantity::fraction(1, 10);
-const CATCHIER_FLYER_1: Quantity<Person> = Quantity::fraction(1, 5);
+const CATCHIER_FLYER_1: Quantity<Person> = Quantity::fraction(1, 7);
 
 impl Project {
     fn apply(self, world: &mut World) {
@@ -63,6 +65,18 @@ impl Project {
                 let persuasiveness = &mut world.cards.activism.flyer_persuasiveness;
                 assert_eq!(persuasiveness, &CATCHIER_FLYER_0);
                 *persuasiveness = CATCHIER_FLYER_1;
+
+                world
+                    .cards
+                    .research
+                    .manager
+                    .unlock(Project::BetterGuidelines1);
+
+                world.cards.research.manager.unlock(Project::Recycling);
+            }
+            Project::Recycling => {
+                assert!(!world.cards.activism.has_recycling);
+                world.cards.activism.has_recycling = true;
             }
         }
     }
@@ -71,7 +85,8 @@ impl Project {
         match self {
             Project::BetterGuidelines1 => Quantity::new(1),
             Project::BetterGuidelines2 => Quantity::new(2),
-            Project::CatchierFlyer1 => Quantity::new(5),
+            Project::CatchierFlyer1 => Quantity::fraction(1, 2),
+            Project::Recycling => Quantity::new(1) + Quantity::fraction(1, 2),
         }
     }
 
@@ -80,6 +95,7 @@ impl Project {
             Project::BetterGuidelines1 => "Better Guidelines".into(),
             Project::BetterGuidelines2 => "Even better Guidelines".into(),
             Project::CatchierFlyer1 => "Catchier Flyer".into(),
+            Project::Recycling => "Recycling".into(),
         }
     }
 }
@@ -90,6 +106,7 @@ mod research_manager {
     use crate::{
         duration::Duration,
         world::{
+            message::{Message, STANDARD_MESSAGE_DURATION},
             quantity::{types::ResearchPoints, Quantity},
             World,
         },
@@ -113,7 +130,7 @@ mod research_manager {
         }
 
         pub fn new() -> ResearchManager {
-            let initial = Project::BetterGuidelines1;
+            let initial = Project::CatchierFlyer1;
             let mut locked: IndexSet<_> = ALL_PROJECTS.into();
             let success = locked.remove(&initial);
             assert!(success);
@@ -158,6 +175,11 @@ mod research_manager {
                 let success = self.cards.research.manager.finished.insert(project);
                 assert!(success);
                 self.cards.research.manager.active = None;
+
+                self.messages.queue(Message::new(
+                    format!("Finished research: {}", project.name()),
+                    STANDARD_MESSAGE_DURATION,
+                ))
             }
         }
     }
@@ -245,11 +267,11 @@ impl World {
         }
     }
 
-    fn render_active(&mut self, _input: &Input, mut view: MutGridView<'_, Cell>) {
-        let (project, progress) = self.cards.research.manager.active().unwrap();
+    fn render_active(&mut self, input: &Input, mut view: MutGridView<'_, Cell>) {
+        let (project, progress) = &mut self.cards.research.manager.active().unwrap();
 
         let dur = Duration::from_quantity_and_rate_approximation(
-            project.cost() - progress,
+            project.cost() - *progress,
             self.cards.research.rate,
         );
 
@@ -258,13 +280,17 @@ impl World {
         view.print_overflowing(
             3,
             format!(
-                "Progress: {:.2}% [{}] ((({}s)))",
+                "Progress: {:.2}% [{}]",
                 100.0 * progress.as_f64() / project.cost().as_f64(),
-                dur.stringify(2),
-                dur.as_millis() / 1000.
+                dur.stringify(2)
             )
             .into(),
         );
+
+        view.print_overflowing(5, "Speed up a bit with r.".to_owned().into());
+        if let Some(Event::Key(Key::R)) = input.event {
+            *progress += Quantity::fraction(1, 120);
+        }
     }
 
     pub(super) fn render_card_research(&mut self, input: &Input, view: MutGridView<'_, Cell>) {
