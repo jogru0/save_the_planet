@@ -156,6 +156,7 @@ pub mod text {
 
         pub fn styled(mut self, string: &str, fg: Option<Color>, bg: Option<Color>) -> Self {
             for char in string.chars() {
+                assert_ne!(char, '\n');
                 self.entries.push(PreCell::new(Some(char), fg, bg))
             }
             self

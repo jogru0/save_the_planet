@@ -17,7 +17,7 @@ use crate::{
 
 use self::research_manager::ResearchManager;
 
-use super::abstract_card::AbstractCard;
+use super::{abstract_card::AbstractCard, activism::INITIAL_FLYER_PERSUASIVENESS};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum Project {
@@ -34,11 +34,11 @@ const ALL_PROJECTS: [Project; 4] = [
     Project::Recycling,
 ];
 
-const FLYER_EFFECTIVENESS_0: Rate<Emission> = Rate::new(Quantity::new(100_000), Duration::YEAR);
+pub const FLYER_EFFECTIVENESS_0: Rate<Emission> = Rate::new(Quantity::new(100_000), Duration::YEAR);
 const FLYER_EFFECTIVENESS_1: Rate<Emission> = Rate::new(Quantity::new(150_000), Duration::YEAR);
 const FLYER_EFFECTIVENESS_2: Rate<Emission> = Rate::new(Quantity::new(500_000), Duration::YEAR);
 
-const CATCHIER_FLYER_0: Quantity<Person> = Quantity::fraction(1, 10);
+const CATCHIER_FLYER_0: Quantity<Person> = INITIAL_FLYER_PERSUASIVENESS;
 const CATCHIER_FLYER_1: Quantity<Person> = Quantity::fraction(1, 7);
 
 impl Project {
@@ -71,8 +71,6 @@ impl Project {
                     .research
                     .manager
                     .unlock(Project::BetterGuidelines1);
-
-                world.cards.research.manager.unlock(Project::Recycling);
             }
             Project::Recycling => {
                 assert!(!world.cards.activism.has_recycling);
@@ -86,7 +84,7 @@ impl Project {
             Project::BetterGuidelines1 => Quantity::new(1),
             Project::BetterGuidelines2 => Quantity::new(2),
             Project::CatchierFlyer1 => Quantity::fraction(1, 2),
-            Project::Recycling => Quantity::new(1) + Quantity::fraction(1, 2),
+            Project::Recycling => Quantity::fraction(3, 2),
         }
     }
 
@@ -146,8 +144,8 @@ mod research_manager {
             &self.available
         }
 
-        pub fn active(&self) -> &Option<(Project, Quantity<ResearchPoints>)> {
-            &self.active
+        pub fn active(&mut self) -> &mut Option<(Project, Quantity<ResearchPoints>)> {
+            &mut self.active
         }
 
         pub fn activate(&mut self, project: Project) {
@@ -159,9 +157,10 @@ mod research_manager {
     }
     impl World {
         pub fn simulate_research_manager(&mut self, delta: Duration) {
+            let rate = self.research_rate();
             let done_project =
                 if let Some((project, progress)) = &mut self.cards.research.manager.active {
-                    *progress += self.cards.research.rate * delta;
+                    *progress += rate * delta;
                     if progress >= &mut project.cost() {
                         Some(*project)
                     } else {
@@ -187,8 +186,9 @@ mod research_manager {
 
 pub struct Research {
     discovered: bool,
-    manager: ResearchManager,
-    rate: Rate<ResearchPoints>,
+    pub manager: ResearchManager,
+    rate_per_researcher: Rate<ResearchPoints>,
+    pub manual_research_per_click: Quantity<ResearchPoints>,
 }
 
 impl Research {
@@ -199,7 +199,8 @@ impl Research {
         Research {
             discovered: false,
             manager: ResearchManager::new(),
-            rate: Rate::new(Quantity::new(1), Duration::MINUTE),
+            rate_per_researcher: Rate::new(Quantity::new(1), Duration::MINUTE),
+            manual_research_per_click: Quantity::default(),
         }
     }
 }
@@ -219,6 +220,10 @@ impl AbstractCard for Research {
 }
 
 impl World {
+    fn research_rate(&self) -> Rate<ResearchPoints> {
+        self.cards.staff.researcher.whole_amount() * self.cards.research.rate_per_researcher
+    }
+
     fn render_inactive_not_empty(&mut self, input: &Input, mut view: MutGridView<'_, Cell>) {
         assert!(self.cards.research.manager.active().is_none());
         assert!(!self.cards.research.manager.available().is_empty());
@@ -235,7 +240,7 @@ impl World {
                     project.name(),
                     Duration::from_quantity_and_rate_approximation(
                         project.cost(),
-                        self.cards.research.rate
+                        self.research_rate()
                     )
                     .stringify(2)
                 )),
@@ -268,28 +273,40 @@ impl World {
     }
 
     fn render_active(&mut self, input: &Input, mut view: MutGridView<'_, Cell>) {
-        let (project, progress) = &mut self.cards.research.manager.active().unwrap();
+        let rate = self.research_rate();
+        let (project, progress) = self.cards.research.manager.active().as_mut().unwrap();
 
-        let dur = Duration::from_quantity_and_rate_approximation(
-            project.cost() - *progress,
-            self.cards.research.rate,
-        );
+        let dur = Duration::from_quantity_and_rate_approximation(project.cost() - *progress, rate);
 
-        view.print_overflowing(0, "Currently researching:".to_owned().into());
+        view.print_overflowing(0, "Current research:".to_owned().into());
         view.print_overflowing(1, project.name().into());
-        view.print_overflowing(
+        view.print(
             3,
+            0,
             format!(
-                "Progress: {:.2}% [{}]",
+                "Progress: {:.2}%",
                 100.0 * progress.as_f64() / project.cost().as_f64(),
-                dur.stringify(2)
             )
             .into(),
         );
+        view.print(4, 0, format!("[{}]", dur.stringify(2)).into());
 
-        view.print_overflowing(5, "Speed up a bit with r.".to_owned().into());
-        if let Some(Event::Key(Key::R)) = input.event {
-            *progress += Quantity::fraction(1, 120);
+        if self.cards.research.manual_research_per_click != Quantity::default() {
+            view.print_overflowing(
+                6,
+                format!(
+                    "Speed up {} with r.",
+                    Duration::from_quantity_and_rate_approximation(
+                        self.cards.research.manual_research_per_click,
+                        rate
+                    )
+                    .stringify(2)
+                )
+                .into(),
+            );
+            if let Some(Event::Key(Key::R)) = input.event {
+                *progress += self.cards.research.manual_research_per_click;
+            }
         }
     }
 
@@ -302,9 +319,7 @@ impl World {
     }
 
     pub(super) fn simulate_card_research(&mut self, delta: Duration) {
-        if !self.cards.research.discovered
-            && self.cards.activism.supporting_people >= Quantity::new(4)
-        {
+        if !self.cards.research.discovered && self.cards.staff.researcher != Quantity::default() {
             self.cards.research.discovered = true;
             self.messages.queue(Message::new(
                 "Research unlocked.".into(),

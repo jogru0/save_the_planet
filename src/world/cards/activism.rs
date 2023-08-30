@@ -14,7 +14,7 @@ use crate::{
     },
 };
 
-use super::abstract_card::AbstractCard;
+use super::{abstract_card::AbstractCard, research::FLYER_EFFECTIVENESS_0};
 
 impl AbstractCard for Activism {
     fn menu_string(&self) -> String {
@@ -49,10 +49,15 @@ impl Stage {
 }
 
 mod main {
+    use crate::world::cards::research::Project::Recycling;
     use crate::{
         grid::{Cell, MutGridView},
         input::{Event, Input, Key},
-        world::World,
+        world::{
+            message::{Message, STANDARD_MESSAGE_DURATION},
+            quantity::Quantity,
+            World,
+        },
     };
 
     impl World {
@@ -63,7 +68,15 @@ mod main {
         ) {
             match input.event {
                 Some(Event::Key(Key::F)) => {
-                    self.print_flyer();
+                    let success = self.manually_create_flyer();
+                    if !success {
+                        self.cards.research.manual_research_per_click = Quantity::fraction(1, 120);
+                        self.cards.research.manager.unlock(Recycling);
+                        self.messages.queue(Message::new(
+                            "Manuel research unlocked.".to_owned(),
+                            STANDARD_MESSAGE_DURATION,
+                        ));
+                    }
                 }
                 Some(Event::Key(Key::H)) => {
                     self.handout_flyer();
@@ -177,10 +190,8 @@ mod prolog {
 
 const INITIAL_NUMBER_OF_FLYERS_AND_INVERSE_OF_PERSUASIVENESS: u128 = 10;
 const INITIAL_FLYER_PRINT_COST: Quantity<Emission> = Quantity::new(6);
-const INITIAL_FLYER_PERSUASIVENESS: Quantity<Person> =
+pub const INITIAL_FLYER_PERSUASIVENESS: Quantity<Person> =
     Quantity::fraction(1, INITIAL_NUMBER_OF_FLYERS_AND_INVERSE_OF_PERSUASIVENESS);
-const INITIAL_FLYER_EFFECTIVENESS: Rate<Emission> =
-    Rate::new(Quantity::new(100_000), Duration::YEAR);
 const NUMBER_OF_PROLOG_STEPS: usize = 6;
 
 // #[derive(Debug)]
@@ -188,15 +199,20 @@ pub struct Activism {
     stage: Stage,
     pub emission_balance: Balance<Emission>,
     pub flyer: Quantity<Flyer>,
+    pub total_number_of_flyers: Quantity<Flyer>,
     pub supporting_people: Quantity<Person>,
     pub unsupporting_people: Quantity<Person>,
     pub save_rate_from_flyers: Rate<Emission>,
 
+    pub next_unlock_people: Quantity<Person>,
+    pub next_next_unlock_people: Quantity<Person>,
+
     pub flyer_persuasiveness: Quantity<Person>,
     pub flyer_effectiveness: Rate<Emission>,
     pub flyer_print_cost: Quantity<Emission>,
-    pub maximal_emission_deficit: Quantity<Emission>,
 
+    pub maximal_emission_deficit: Quantity<Emission>,
+    // pub maximal_flyer: Quantity<Flyer>,
     pub has_recycling: bool,
 }
 impl Activism {
@@ -206,15 +222,20 @@ impl Activism {
 
             emission_balance: Balance::new(),
             flyer: Quantity::new(INITIAL_NUMBER_OF_FLYERS_AND_INVERSE_OF_PERSUASIVENESS),
+            total_number_of_flyers: Quantity::default(),
             supporting_people: Quantity::new(0),
             unsupporting_people: Quantity::new(9_000_000_000),
             save_rate_from_flyers: Rate::default(),
 
-            flyer_persuasiveness: INITIAL_FLYER_PERSUASIVENESS,
-            flyer_effectiveness: INITIAL_FLYER_EFFECTIVENESS,
-            flyer_print_cost: INITIAL_FLYER_PRINT_COST,
-            maximal_emission_deficit: Quantity::default(),
+            next_unlock_people: Quantity::new(4),
+            next_next_unlock_people: Quantity::new(30),
 
+            flyer_persuasiveness: INITIAL_FLYER_PERSUASIVENESS,
+            flyer_effectiveness: FLYER_EFFECTIVENESS_0,
+            flyer_print_cost: INITIAL_FLYER_PRINT_COST,
+
+            maximal_emission_deficit: Quantity::default(),
+            // maximal_flyer: Quantity::new(100),
             has_recycling: false,
         }
     }
@@ -244,7 +265,15 @@ impl World {
     pub(super) fn simulate_card_activism(&mut self, delta: Duration) {
         let co2_card = &mut self.cards.activism;
 
-        *co2_card.emission_balance.pos_mut() += co2_card.save_rate_from_flyers * delta
+        *co2_card.emission_balance.pos_mut() += co2_card.save_rate_from_flyers * delta;
+
+        while co2_card.next_unlock_people <= co2_card.supporting_people {
+            let sum = co2_card.next_unlock_people + co2_card.next_next_unlock_people;
+            co2_card.next_unlock_people = co2_card.next_next_unlock_people;
+            co2_card.next_next_unlock_people = sum;
+
+            self.cards.staff.researcher += 1;
+        }
     }
 
     fn handout_flyer(&mut self) -> bool {
@@ -278,7 +307,16 @@ impl World {
         }
     }
 
+    fn has_room_for_one_more_flyer(&self) -> bool {
+        true
+        // self.cards.activism.flyer + Quantity::new(1) <= self.cards.activism.maximal_flyer
+    }
+
     fn print_flyer(&mut self) -> bool {
+        if !self.has_room_for_one_more_flyer() {
+            return false;
+        }
+
         let mut theoretical_balance = self.cards.activism.emission_balance;
         *theoretical_balance.neg_mut() += self.cards.activism.flyer_print_cost;
         *theoretical_balance.pos_mut() += self.cards.activism.maximal_emission_deficit;
@@ -289,11 +327,17 @@ impl World {
 
         *self.cards.activism.emission_balance.neg_mut() += self.cards.activism.flyer_print_cost;
         self.cards.activism.flyer += 1;
+        self.cards.activism.total_number_of_flyers += 1;
         true
     }
 
     fn recycle_flyer(&mut self) -> bool {
+        if !self.has_room_for_one_more_flyer() {
+            return false;
+        }
+
         self.cards.activism.flyer += 1;
+        self.cards.activism.total_number_of_flyers += 1;
         true
     }
 }

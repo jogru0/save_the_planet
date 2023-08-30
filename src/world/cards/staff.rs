@@ -26,13 +26,13 @@ impl AbstractCard for Staff {
 
 #[derive(Debug)]
 pub struct Staff {
-    _researcher: Quantity<Person>,
+    pub researcher: Quantity<Person>,
     _activists: Quantity<Person>,
 }
 impl Staff {
     pub fn new() -> Staff {
         Staff {
-            _researcher: Quantity::default(),
+            researcher: Quantity::default(),
             _activists: Quantity::default(),
         }
     }

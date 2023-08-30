@@ -235,11 +235,13 @@ mod duration {
         pub fn stringify(&self, precision: usize) -> String {
             let precision_factor = 10_u128.pow(precision as u32);
 
-            let (base, base_str) = if &Self::MINUTE <= self {
+            let (base, base_str) =
+            //  if &Self::MINUTE <= self {
+            //     (Self::SECOND, "s")
+            // } else {
                 (Self::SECOND, "s")
-            } else {
-                (Self::SECOND, "s")
-            };
+            // }
+            ;
 
             let divisor_ticks = base.ticks / precision_factor;
             assert_ne!(divisor_ticks, 0);
